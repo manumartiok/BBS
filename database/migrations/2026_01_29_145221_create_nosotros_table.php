@@ -13,20 +13,20 @@ return new class extends Migration
     {
         Schema::create('nosotros', function (Blueprint $table) {
             $table->id();
-            // $table->string('foto')->nullable();
-            // $table->string('texto1')->nullable();
-            // $table->text('descripcion')->nullable();
-            // $table->string('texto2')->nullable();
-            // $table->string('icono1')->nullable();
-            // $table->string('nombre_icono1')->nullable();
-            // $table->text('texto_icono1')->nullable();
-            // $table->string('icono2')->nullable();
-            // $table->string('nombre_icono2')->nullable();
-            // $table->text('texto_icono2')->nullable();
-            // $table->string('icono3')->nullable();
-            // $table->string('nombre_icono3')->nullable();
-            // $table->text('texto_icono3')->nullable();
-            // $table->string('video')->nullable();
+            $table->string('foto')->nullable();
+            $table->string('texto1')->nullable();
+            $table->text('descripcion')->nullable();
+            $table->string('texto2')->nullable();
+            $table->string('icono1')->nullable();
+            $table->string('nombre_icono1')->nullable();
+            $table->text('texto_icono1')->nullable();
+            $table->string('icono2')->nullable();
+            $table->string('nombre_icono2')->nullable();
+            $table->text('texto_icono2')->nullable();
+            $table->string('icono3')->nullable();
+            $table->string('nombre_icono3')->nullable();
+            $table->text('texto_icono3')->nullable();
+            $table->string('video')->nullable();
             $table->timestamps();
         });
     }

@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('novedades', function (Blueprint $table) {
             $table->id();
-            // $table->string('orden')->nullable();
-            // $table->string('texto_chico')->nullable();
-            // $table->string('titulo')->nullable();
-            // $table->text('texto')->nullable();
-            // $table->string('foto')->nullable();
-            // $table->boolean('active')->default(true);
-            // $table->boolean('destacado')->default(true);
+            $table->string('orden')->nullable();
+            $table->string('texto_chico')->nullable();
+            $table->string('titulo')->nullable();
+            $table->text('texto')->nullable();
+            $table->string('foto')->nullable();
+            $table->boolean('active')->default(true);
+            $table->boolean('destacado')->default(true);
             $table->timestamps();
         });
     }
