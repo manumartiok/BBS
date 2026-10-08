@@ -151,7 +151,7 @@
 
 {{-- mapa API--}}
 <div class="max-w-[1366px] mx-auto px-[5%] md:px-[71px] h-[500px] mb-[70px]">
-    <div id="mapaContacto" class="w-full h-full"></div>
+    <div id="mapaContacto" class="relative z-0 w-full h-full"></div>
 </div>
 
 <script src="https://www.google.com/recaptcha/api.js?render={{ env('RECAPTCHA_SITE_KEY') }}"></script>
@@ -229,102 +229,45 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+{{-- Mapa: Leaflet + OpenStreetMap (gratuito, sin API key) --}}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-function initMap() {
-    const ubicacion = { 
-        lat: parseFloat("{{ $contacto_contenido->latitud }}"), 
-        lng: parseFloat("{{ $contacto_contenido->longitud }}") 
-    };
+document.addEventListener('DOMContentLoaded', function () {
+    const lat = parseFloat("{{ $contacto_contenido->latitud ?? '' }}");
+    const lng = parseFloat("{{ $contacto_contenido->longitud ?? '' }}");
+    const contenedor = document.getElementById('mapaContacto');
 
-    const grayStyle = [
-        { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
-        { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-        { elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] },
-        { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }, { weight: 2 }] },
-        {
-            featureType: 'road.highway',
-            elementType: 'geometry',
-            stylers: [{ color: '#ebebeb' }]
-        },
-        {
-            featureType: 'road.highway',
-            elementType: 'geometry.stroke',
-            stylers: [{ color: '#ebebeb' }, { weight: 0.5 }]
-        },
-        {
-            featureType: 'road.arterial',
-            elementType: 'geometry',
-            stylers: [{ color: '#ebebeb' }]
-        },
-        {
-            featureType: 'road.arterial',
-            elementType: 'geometry.stroke',
-            stylers: [{ color: '#e0e0e0' }, { weight: 0.5 }]
-        },
-        {
-            featureType: 'road.local',
-            elementType: 'geometry',
-            stylers: [{ color: '#ebebeb' }]
-        },
-        {
-            featureType: 'road.local',
-            elementType: 'geometry.stroke',
-            stylers: [{ color: '#ebebeb' }, { weight: 0.3 }]
-        },
-        {
-            featureType: 'water',
-            elementType: 'geometry',
-            stylers: [{ color: '#e3e3e3' }]
-        },
-        {
-            featureType: 'landscape.natural',
-            elementType: 'geometry',
-            stylers: [{ color: '#f0f0f0' }]
-        },
-        {
-            featureType: 'poi',
-            elementType: 'geometry',
-            stylers: [{ color: '#ebebeb' }]
-        },
-        {
-            featureType: 'administrative',
-            elementType: 'geometry',
-            stylers: [{ visibility: 'off' }]
-        },
-        {
-            featureType: 'transit',
-            elementType: 'geometry',
-            stylers: [{ color: '#f0f0f0' }]
-        }
-    ];
+    if (!contenedor || isNaN(lat) || isNaN(lng)) return;
 
-    const mapa = new google.maps.Map(document.getElementById("mapaContacto"), {
-        zoom: 15,
-        center: ubicacion,
-        styles: grayStyle,
-        gestureHandling: 'greedy'
-    });
+    // Filtro CSS aplicado a las baldosas (gris claro). Usar 'none' para color normal.
+    const FILTRO_MAPA = 'grayscale(1) contrast(.9) brightness(1.1)';
+    const ZOOM = 15;
 
-    const customIcon = {
-        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+    const iconoPin = L.icon({
+        iconUrl: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="30" viewBox="0 0 50 50" fill="none">
             <path d="M41.6666 20.8334C41.6666 33.3334 24.9999 45.8334 24.9999 45.8334C24.9999 45.8334 8.33325 33.3334 8.33325 20.8334C8.33325 16.4131 10.0892 12.1738 13.2148 9.04824C16.3404 5.92263 20.5796 4.16669 24.9999 4.16669C29.4202 4.16669 33.6594 5.92263 36.785 9.04824C39.9106 12.1738 41.6666 16.4131 41.6666 20.8334Z" fill="#FF9000" stroke="#FF9000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M25 27.0833C28.4518 27.0833 31.25 24.2851 31.25 20.8333C31.25 17.3815 28.4518 14.5833 25 14.5833C21.5482 14.5833 18.75 17.3815 18.75 20.8333C18.75 24.2851 21.5482 27.0833 25 27.0833Z" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         `),
-        scaledSize: new google.maps.Size(70, 70),
-        origin: new google.maps.Point(0, 0),
-        anchor: new google.maps.Point(35, 70)
-    };
-
-    new google.maps.Marker({
-        position: ubicacion,
-        map: mapa,
-        icon: customIcon
+        iconSize: [70, 70],
+        iconAnchor: [35, 70]
     });
-}
+
+    const mapa = L.map(contenedor, { zoomControl: true, attributionControl: true }).setView([lat, lng], ZOOM);
+    mapa.attributionControl.setPrefix(false);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+    }).addTo(mapa);
+
+    mapa.getPane('tilePane').style.filter = FILTRO_MAPA;
+
+    L.marker([lat, lng], { icon: iconoPin }).addTo(mapa);
+});
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAZUlidy4Exa3bvZLRh4qgqx4lwlLy6khw&callback=initMap&libraries=geometry,places" async defer></script>
 
 @endsection
 
