@@ -1,5 +1,5 @@
 @php
-    $bn = App\Models\NosotroBanner::first();
+    $bn = App\Models\Banner::seccion('nosotros');
      $nosotros = App\Models\Nosotro::first(); 
 @endphp
 
@@ -15,7 +15,7 @@
 <div class="w-full h-[300px] bg-cover bg-center letra text-white pt-[120px] pb-[70px]" style="background-image: url('{{ $bn->foto }}');">
     <div class="h-full max-w-[1366px] mx-auto px-[5%] md:px-[71px] flex flex-col justify-between">
         <h3 class="text-[12px]"><a class="font-bold" href="{{ route('home') }}" >Inicio</a> > Nosotros</h3>
-        <h1 class="text-[32px] font-medium">{{$bn->texto}}</h1>
+        <h1 class="text-[32px] font-medium">{{ $bn->t('texto') }}</h1>
     </div>
 </div>
 

@@ -15,7 +15,7 @@
             <h3 class="text-[12px]">
             <a class="font-bold" href="{{ route('home') }}">Inicio</a> > <a class="font-bold" href="{{ route('productos') }}">Productos</a> > {{ $marca->nombre }}
         </h3>
-        <h1 class="text-[40px] font-bold">{{ $productos_ban->texto }}</h1>
+        <h1 class="text-[40px] font-bold">{{ $productos_ban->t('texto') }}</h1>
     </div>
 </div>
 

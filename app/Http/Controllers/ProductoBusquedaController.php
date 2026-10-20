@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Marca;
 use App\Models\Producto;
-use App\Models\ProductoBan;
+use App\Models\Banner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -13,7 +13,7 @@ class ProductoBusquedaController extends Controller
     public function productos(Request $request)
     {
         $marcas = $this->marcas();
-        $productos_ban = ProductoBan::first();
+        $productos_ban = Banner::seccion('productos');
         $hayFiltros = $this->hayFiltros($request);
         $productos = collect();
 
@@ -47,7 +47,7 @@ class ProductoBusquedaController extends Controller
 
     public function categoria(Request $request, $id)
     {
-        $productos_ban = ProductoBan::first();
+        $productos_ban = Banner::seccion('productos');
         $marca = Marca::findOrFail($id);
         $marcas = $this->marcas();
         $buscar = trim((string) $request->get('buscar', ''));

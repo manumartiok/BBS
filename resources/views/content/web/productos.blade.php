@@ -1,5 +1,5 @@
 @php
-    $productos_ban = $productos_ban ?? App\Models\ProductoBan::first();
+    $productos_ban = $productos_ban ?? App\Models\Banner::seccion('productos');
     $marcas = $marcas ?? App\Models\Marca::where('active', true)->orderBy('orden')->get();
     $hayFiltros = $hayFiltros ?? (request()->filled('buscar') || request()->filled('codigo') || request()->filled('marca'));
 @endphp
@@ -16,7 +16,7 @@
         <h3 class="text-[12px]">
             <a class="font-bold" href="{{ route('home') }}">Inicio</a> > Productos
         </h3>
-        <h1 class="text-[40px] font-bold">{{ $productos_ban->texto }}</h1>
+        <h1 class="text-[40px] font-bold">{{ $productos_ban->t('texto') }}</h1>
     </div>
 </div>
 

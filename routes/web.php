@@ -10,14 +10,11 @@ use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HomeBannerController;
 use App\Http\Controllers\NosotroController;
-use App\Http\Controllers\NosotroBannerController;
 use App\Http\Controllers\MarcaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProductoBusquedaController;
 use App\Http\Controllers\NovedadeController;
-use App\Http\Controllers\NovedadeBannerController;
 use App\Http\Controllers\ContactoController;
-use App\Http\Controllers\ContactoBannerController;
 
 use App\Http\Controllers\WebUsuarioController;
 use App\Http\Controllers\ListaController;
@@ -26,7 +23,8 @@ use App\Http\Controllers\InfoController;
 use App\Http\Controllers\InfoPagoController;
 use App\Models\Marca;
 use App\Models\Producto;
-use App\Models\ProductoBan;
+use App\Models\Banner;
+use App\Http\Controllers\BannerController;
 
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\LogoController;
@@ -63,10 +61,6 @@ Route::middleware(AdminAuth::class)->group(function () {
     //nosotros
     Route::get('/admin/nosotros', [NosotroController::class, 'show'])->name('adm.nosotros');
     Route::post('/admin/nosotros/update', [NosotroController::class,'update'])->name('adm.nosotros-update');
-
-    //nosotros banner
-    Route::get('/admin/nosotros/banner', [NosotroBannerController::class, 'show'])->name('adm.nosotros-ban');
-    Route::post('/admin/nosotros/banner/update', [NosotroBannerController::class,'update'])->name('adm.nosotros-ban-update');
 
      // marcas
 
@@ -105,17 +99,9 @@ Route::middleware(AdminAuth::class)->group(function () {
     Route::get('/admin/novedade/destacado/{novedade_id}', [NovedadeController::class, 'destacado'])->name('adm.novedade-destacado');
     Route::post('/admin/novedade/reordenar', [NovedadeController::class, 'reordenar'])->name('adm.novedade-reordenar');
 
-    //novedades banner
-    Route::get('/admin/novedades/banner', [NovedadeBannerController::class, 'show'])->name('adm.novedade-ban');
-    Route::post('/admin/novedades/banner/update', [NovedadeBannerController::class,'update'])->name('adm.novedade-ban-update');
-
     // contacto 
     Route::get('/admin/contacto', [ContactoController::class, 'show'])->name('adm.contacto');
     Route::post('/admin/contacto/update', [ContactoController::class, 'update'])->name('adm.contacto.update');
-
-    // contacto banner 
-    Route::get('/admin/contacto/banner', [ContactoBannerController::class, 'show'])->name('adm.contacto-ban');
-    Route::post('/admin/contacto/banner/update', [ContactoBannerController::class, 'update'])->name('adm.contacto-ban.update');
 
      //web-usuarios
     Route::get('/admin/web-usuarios', [WebUsuarioController::class,'index'])->name('adm.web-usuarios');
@@ -175,7 +161,22 @@ Route::middleware(AdminAuth::class)->group(function () {
     Route::get('/admin/metadatos/editor/{metadato_id}', [MetadatoController::class,'show'])->name('adm.metadatos-editor');
     Route::post('/admin/metadatos/update', [MetadatoController::class,'update'])->name('adm.metadatos-update');
     Route::get('/admin/metadatos/destroy/{metadato_id}', [MetadatoController::class,'destroy'])->name('adm.metadatos-destroy');
+
+    //banners (uno por sección: nosotros, novedades, contacto, productos, ...)
+    Route::get('/admin/banner/{seccion}', [BannerController::class, 'show'])->name('adm.banner');
+    Route::post('/admin/banner/{seccion}', [BannerController::class, 'update'])->name('adm.banner-update');
+
+    //módulos generados con php artisan make:modulo
+    require __DIR__.'/modulos.php';
 });
+
+//idioma
+Route::get('/idioma/{idioma}', function ($idioma) {
+    if (in_array($idioma, \App\Support\Idiomas::todos())) {
+        session(['idioma' => $idioma]);
+    }
+    return back();
+})->name('idioma.cambiar');
 
 
 //login
@@ -238,7 +239,7 @@ Route::get('/productos/marca/{id}', [ProductoBusquedaController::class, 'categor
 Route::get('/productos/detalle/{id}', function ($id) {
     $producto = Producto::with('marca', 'fotos')->findOrFail($id);
     $marcas = Marca::where('active', true)->orderBy('orden')->get();
-    $productos_ban = ProductoBan::first();
+    $productos_ban = Banner::seccion('productos');
     $related = Producto::where('marca_id', $producto->marca_id)
         ->where('active', true)
         ->where('id', '!=', $producto->id)

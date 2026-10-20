@@ -1,5 +1,5 @@
 @php
-    $novedades_ban = App\Models\NovedadeBanner::first();
+    $novedades_ban = App\Models\Banner::seccion('novedades');
     $novedades = App\Models\Novedade::where('active', true)
         ->orderBy('orden')
         ->get(); 
@@ -18,7 +18,7 @@
         <h3 class="text-[12px]">
             <a class="font-bold" href="{{ route('home') }}">Inicio</a> > Novedades
         </h3>
-        <h1 class="text-[32px] font-medium">{{ $novedades_ban->texto }}</h1>
+        <h1 class="text-[32px] font-medium">{{ $novedades_ban->t('texto') }}</h1>
     </div>
 </div>
 

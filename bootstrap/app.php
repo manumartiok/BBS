@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'web.usuario.auth' => \App\Http\Middleware\WebUsuarioAuth::class,
         ]);
+
+        // Idioma del sitio (config/sitio.php)
+        $middleware->web(append: [
+            \App\Http\Middleware\SetIdioma::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

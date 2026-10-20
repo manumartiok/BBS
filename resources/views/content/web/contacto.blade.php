@@ -1,5 +1,5 @@
 @php
-    $contacto_ban = App\Models\ContactoBanner::first();
+    $contacto_ban = App\Models\Banner::seccion('contacto');
     $contacto_contenido = App\Models\Contacto::first();
 @endphp
 
@@ -16,7 +16,7 @@
         <h3 class="text-[12px]">
             <a class="font-bold" href="{{ route('home') }}">Inicio</a> > Contacto
         </h3>
-        <h1 class="text-[32px] font-medium">{{ $contacto_ban->texto }}</h1>
+        <h1 class="text-[32px] font-medium">{{ $contacto_ban->t('texto') }}</h1>
     </div>
 </div>
 
