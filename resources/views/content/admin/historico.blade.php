@@ -55,17 +55,8 @@
                 @forelse($pedidos as $pedido)
                     @php
                         $cliente = $pedido->cliente ?: $pedido->usuario;
-                        $estadoTexto = [
-                            'en_preparacion' => 'En preparacion',
-                            'entregado' => 'Entregado',
-                            'cancelado' => 'Cancelado',
-                        ][$pedido->estado] ?? ucfirst(str_replace('_', ' ', $pedido->estado));
-
-                        $estadoClass = [
-                            'en_preparacion' => 'bg-yellow-400',
-                            'entregado' => 'bg-green-500',
-                            'cancelado' => 'bg-red-500',
-                        ][$pedido->estado] ?? 'bg-gray-400';
+                        $estadoTexto = $pedido->estado_texto;
+                        $estadoClass = $pedido->estado_badge;
                     @endphp
                     <tr class="border-t hover:bg-gray-50">
                         <td class="px-4 py-3 font-mono text-sm">#{{ str_pad($pedido->id, 8, '0', STR_PAD_LEFT) }}</td>

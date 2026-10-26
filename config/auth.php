@@ -44,6 +44,10 @@ return [
         'driver' => 'session',
         'provider' => 'web_usuarios',
     ],
+        'usuario_publico' => [
+            'driver' => 'session',
+            'provider' => 'usuarios_publicos',
+        ],
         
     ],
 
@@ -73,6 +77,10 @@ return [
         'web_usuarios' => [
             'driver' => 'eloquent',
             'model' => App\Models\WebUsuario::class,
+        ],
+        'usuarios_publicos' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\UsuarioPublico::class,
         ],
 
         // 'users' => [

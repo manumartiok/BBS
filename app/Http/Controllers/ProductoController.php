@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\GestionaArchivos;
 use App\Models\Producto;
 use Illuminate\Http\Request;
 use App\Models\Marca;
@@ -10,6 +11,11 @@ use App\Models\ProductoFoto;
 
 class ProductoController extends Controller
 {
+    use GestionaArchivos;
+
+    // Subcampos de la lista "caracteristicas" (se guarda como json)
+    private const CARACTERISTICAS = ['nombre' => 'string', 'valor' => 'string'];
+
     /**
      * Display a listing of the resource.
      */
@@ -21,12 +27,13 @@ class ProductoController extends Controller
         if ($request->filled('q')) {
             $term = $request->get('q');
 
-            // Buscar por nombre o código, o por texto de la marca
+            // Buscar por nombre, código o por texto de la marca
             $query->where(function($sub) use ($term) {
                 $sub->where('nombre', 'like', "%{$term}%")
-                    ->orWhere('codigo', 'like', "%{$term}%");
-            })->orWhereHas('marca', function($m) use ($term) {
-                $m->where('nombre', 'like', "%{$term}%");
+                    ->orWhere('codigo', 'like', "%{$term}%")
+                    ->orWhereHas('marca', function($m) use ($term) {
+                        $m->where('nombre', 'like', "%{$term}%");
+                    });
             });
         }
 
@@ -45,6 +52,7 @@ class ProductoController extends Controller
         $marcas = Marca::orderBy('orden')->get();
 
         return view('content.admin.producto-creador', [
+            'producto' => new Producto(),
             'marcas' => $marcas
         ]);
     }
@@ -54,40 +62,11 @@ class ProductoController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'foto' => 'nullable|image|max:2048',
-            'archivo' => 'nullable|file|max:5120',
-            'codigo' => 'nullable|string|max:255',
-            'precio' => 'nullable|numeric',
-        ]);
+        $this->validar($request);
 
         $producto = new Producto();
 
-        $producto->marca_id = $request->marca_id;
-        $producto->orden = $request->orden;
-        $producto->codigo = $request->codigo;
-        $producto->nombre = $request->nombre;
-        $producto->precio = $request->precio;
-
-        $producto->destacado = $request->has('destacado') ? (bool)$request->destacado : true;
-
-        if ($request->hasFile('foto')) {
-            $file = $request->file('foto');
-            $name = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('images', $name, 'public');
-
-            $producto->foto = Storage::url($path);
-        }
-
-        if ($request->hasFile('archivo')) {
-            $file = $request->file('archivo');
-            $name = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('files', $name, 'public');
-
-            $producto->archivo = Storage::url($path);
-        }
-
-        $producto->active = $request->has('active') ? (bool)$request->active : true;
+        $this->completar($producto, $request);
 
         $producto->save();
         return redirect()->route('adm.producto-editor', $producto->id)
@@ -119,60 +98,13 @@ class ProductoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Producto $producto)
+    public function update(Request $request)
     {
-        $request->validate([
-            'foto' => 'nullable|image|max:2048',
-            'archivo' => 'nullable|file|max:5120',
-            'codigo' => 'nullable|string|max:255',
-            'precio' => 'nullable|numeric',
-        ]);
+        $this->validar($request);
 
-        $producto = Producto::find($request->producto_id) ?? new Producto();
+        $producto = Producto::findOrFail($request->producto_id);
 
-        $producto->marca_id = $request->marca_id;
-        $producto->orden = $request->orden;
-        $producto->codigo = $request->codigo;
-        $producto->nombre = $request->nombre;
-        $producto->precio = $request->precio;
-
-        $producto->destacado = $request->has('destacado') ? (bool)$request->destacado : $producto->destacado;
-
-        if ($request->hasFile('foto')) {
-
-            if (!empty($producto->foto)) {
-                $oldPath = str_replace('/storage/', '', $producto->foto);
-
-                if (Storage::disk('public')->exists($oldPath)) {
-                    Storage::disk('public')->delete($oldPath);
-                }
-            }
-
-            $file = $request->file('foto');
-            $name = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('images', $name, 'public');
-
-            $producto->foto = Storage::url($path);
-        }
-
-        if ($request->hasFile('archivo')) {
-
-            if (!empty($producto->archivo)) {
-                $oldPath = str_replace('/storage/', '', $producto->archivo);
-
-                if (Storage::disk('public')->exists($oldPath)) {
-                    Storage::disk('public')->delete($oldPath);
-                }
-            }
-
-            $file = $request->file('archivo');
-            $name = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('files', $name, 'public');
-
-            $producto->archivo = Storage::url($path);
-        }
-
-        $producto->active = $request->has('active') ? (bool)$request->active : $producto->active;
+        $this->completar($producto, $request);
 
         $producto->save();
 
@@ -188,23 +120,7 @@ class ProductoController extends Controller
         $producto = Producto::find($producto_id);
 
         if ($producto) {
-
-            if (!empty($producto->foto)) {
-
-                $imagePath = str_replace('/storage/', '', $producto->foto);
-
-                if (Storage::disk('public')->exists($imagePath)) {
-                    Storage::disk('public')->delete($imagePath);
-                }
-            }
-
-            if (!empty($producto->archivo)) {
-                $filePath = str_replace('/storage/', '', $producto->archivo);
-
-                if (Storage::disk('public')->exists($filePath)) {
-                    Storage::disk('public')->delete($filePath);
-                }
-            }
+            $this->borrarArchivosDe($producto, ['foto']);
 
             $producto->delete();
         }
@@ -244,6 +160,51 @@ class ProductoController extends Controller
     }
 
     /**
+     * Alternar oferta.
+     */
+    public function oferta($producto_id)
+    {
+        $producto = Producto::findOrFail($producto_id);
+
+        $producto->oferta = !$producto->oferta;
+
+        $producto->save();
+
+        return redirect()->route('adm.producto')
+            ->with('success', 'Oferta actualizada correctamente.');
+    }
+
+    /**
+     * Alternar más vendido.
+     */
+    public function masVendido($producto_id)
+    {
+        $producto = Producto::findOrFail($producto_id);
+
+        $producto->mas_vendido = !$producto->mas_vendido;
+
+        $producto->save();
+
+        return redirect()->route('adm.producto')
+            ->with('success', 'Más vendido actualizado correctamente.');
+    }
+
+    /**
+     * Alternar descubre más.
+     */
+    public function descubreMas($producto_id)
+    {
+        $producto = Producto::findOrFail($producto_id);
+
+        $producto->descubre_mas = !$producto->descubre_mas;
+
+        $producto->save();
+
+        return redirect()->route('adm.producto')
+            ->with('success', 'Descubre más actualizado correctamente.');
+    }
+
+    /**
      * Reordenar.
      */
     public function reordenar(Request $request)
@@ -264,7 +225,8 @@ class ProductoController extends Controller
 
     /**
      * Importar productos desde CSV/Excel.
-     * Mapea columnas: codigo -> codigo, descripcion -> nombre, marca -> marca, precio -> precio
+     * Mapea columnas: nombre, codigo, stock_fisico, stock_transito, descripcion, marca, precio, puntos, puntos_compra
+     * Si ya existe un producto con ese nombre, se actualiza.
      */
     public function import(Request $request)
     {
@@ -330,17 +292,22 @@ class ProductoController extends Controller
 
         foreach ($rows as $index => $r) {
             try {
-                $codigo = $r['codigo'] ?? ($r['ph'] ?? null);
-                $nombre = $r['descripcion'] ?? ($r['descripcion_esp'] ?? ($r['nombre'] ?? null));
+                $nombre = trim((string) ($r['nombre'] ?? ''));
+                $codigo = $r['codigo'] ?? null;
+                $stockFisico = $r['stock_fisico'] ?? null;
+                $stockTransito = $r['stock_transito'] ?? null;
+                $descripcion = $r['descripcion'] ?? null;
                 $marcaNombre = $r['marca'] ?? null;
                 $precioRaw = $r['precio'] ?? null;
+                $puntosRaw = $r['puntos'] ?? null;
+                $puntosCompraRaw = $r['puntos_compra'] ?? null;
 
-                if (empty($codigo)) {
-                    $errores[] = "Fila " . ($index + 2) . ": código vacío";
+                if ($nombre === '') {
+                    $errores[] = "Fila " . ($index + 2) . ": nombre vacío";
                     continue;
                 }
 
-                $producto = Producto::where('codigo', $codigo)->first();
+                $producto = Producto::where('nombre', $nombre)->first();
                 if (!$producto) {
                     $producto = new Producto();
                     $producto->orden = Producto::count() + 1;
@@ -349,12 +316,32 @@ class ProductoController extends Controller
                     $actualizados++;
                 }
 
-                $producto->codigo = $codigo;
-                if (!empty($nombre)) $producto->nombre = $nombre;
+                $producto->nombre = $nombre;
+                if (!empty($codigo)) $producto->codigo = trim((string) $codigo);
+                if ($stockFisico !== null && $stockFisico !== '') $producto->stock_fisico = $stockFisico;
+                if ($stockTransito !== null && $stockTransito !== '') $producto->stock_transito = $stockTransito;
+                if (!empty($descripcion)) $producto->descripcion = $descripcion;
 
                 if (!empty($precioRaw)) {
                     $precio = floatval(str_replace([',', ' '], ['.', ''], $precioRaw));
                     $producto->precio = $precio;
+                }
+
+                // Puntos: solo se aceptan números enteros
+                if ($puntosRaw !== null && $puntosRaw !== '') {
+                    $puntos = trim((string) $puntosRaw);
+                    if (!ctype_digit($puntos)) {
+                        throw new \InvalidArgumentException('puntos debe ser un número entero');
+                    }
+                    $producto->puntos = (int) $puntos;
+                }
+
+                if ($puntosCompraRaw !== null && $puntosCompraRaw !== '') {
+                    $puntosCompra = trim((string) $puntosCompraRaw);
+                    if (!ctype_digit($puntosCompra)) {
+                        throw new \InvalidArgumentException('puntos_compra debe ser un número entero');
+                    }
+                    $producto->puntos_compra = (int) $puntosCompra;
                 }
 
                 if (!empty($marcaNombre)) {
@@ -465,96 +452,105 @@ class ProductoController extends Controller
     }
 
     /**
-     * Eliminar archivo adjunto del producto.
+     * Asignar fotos a productos por nombre de archivo (sin extensión = nombre del producto).
      */
-    public function deleteArchivo($producto_id)
+    public function fotosMasivas(Request $request)
     {
-        $producto = Producto::findOrFail($producto_id);
+        $request->validate([
+            'fotos'   => 'required|array',
+            'fotos.*' => 'image|max:4096',
+        ]);
 
-        if (!empty($producto->archivo)) {
-            $filePath = str_replace('/storage/', '', $producto->archivo);
+        $asignadas  = 0;
+        $sinProducto = 0;
+        $errores    = 0;
 
-            if (Storage::disk('public')->exists($filePath)) {
-                Storage::disk('public')->delete($filePath);
+        // Mapa: nombre (lowercase) => producto
+        $productos = Producto::all()
+            ->filter(fn ($p) => trim((string) $p->nombre) !== '')
+            ->keyBy(fn ($p) => strtolower(trim($p->nombre)));
+
+        // Nombres que recibieron foto en esta carga
+        $nombresConFoto = [];
+
+        foreach ($request->file('fotos') as $file) {
+            try {
+                // Nombre del archivo sin extensión → nombre buscado
+                $nombreBuscado = strtolower(trim(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)));
+
+                if (!isset($productos[$nombreBuscado])) {
+                    $sinProducto++;
+                    continue;
+                }
+
+                $producto = $productos[$nombreBuscado];
+
+                // Eliminar foto anterior si existe y guardar la nueva
+                $this->borrarArchivo($producto->foto);
+                $producto->foto = $this->subirArchivo($file, 'productos');
+                $producto->save();
+
+                $nombresConFoto[] = $nombreBuscado;
+                $asignadas++;
+
+            } catch (\Throwable $e) {
+                $errores++;
             }
-
-            $producto->archivo = null;
-            $producto->save();
         }
 
-        return redirect()->route('adm.producto-editor', $producto->id)
-            ->with('success', 'Archivo eliminado correctamente.');
-    }
-
-    public function fotosMasivas(Request $request)
-{
-    $request->validate([
-        'fotos'   => 'required|array',
-        'fotos.*' => 'image|max:4096',
-    ]);
- 
-    $asignadas  = 0;
-    $sinProducto = 0;
-    $errores    = 0;
- 
-    // Mapa: código (lowercase) => producto
-    $productos = Producto::all()->keyBy(fn ($p) => strtolower(trim($p->codigo)));
- 
-    // Códigos que recibieron foto en esta carga
-    $codigosConFoto = [];
- 
-    foreach ($request->file('fotos') as $file) {
-        try {
-            // Nombre del archivo sin extensión → código buscado
-            $codigoBuscado = strtolower(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
- 
-            if (!isset($productos[$codigoBuscado])) {
-                $sinProducto++;
-                continue;
-            }
- 
-            $producto = $productos[$codigoBuscado];
- 
-            // Eliminar foto anterior si existe
-            if (!empty($producto->foto)) {
-                $oldPath = ltrim(str_replace('/storage', '', $producto->foto), '/');
-                if (Storage::disk('public')->exists($oldPath)) {
-                    Storage::disk('public')->delete($oldPath);
+        // Productos sin foto coincidente → asignar default.png
+        $defaultAsignados = 0;
+        foreach ($productos as $nombre => $producto) {
+            if (!in_array($nombre, $nombresConFoto)) {
+                // Solo actualizar si aún no tiene foto
+                if (empty($producto->foto)) {
+                    $producto->foto = '/default.png';
+                    $producto->save();
+                    $defaultAsignados++;
                 }
             }
- 
-            // Guardar nueva foto
-            $name = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('images', $name, 'public');
-            $producto->foto = Storage::url($path);
-            $producto->save();
- 
-            $codigosConFoto[] = strtolower(trim($producto->codigo));
-            $asignadas++;
- 
-        } catch (\Throwable $e) {
-            $errores++;
         }
+
+        return redirect()->route('adm.producto')->with('fotos_masivas', [
+            'asignadas'   => $asignadas,
+            'default'     => $defaultAsignados,
+            'sin_producto' => $sinProducto,
+            'errores'     => $errores,
+        ]);
     }
- 
-    // Productos activos sin foto coincidente → asignar default.png
-    $defaultAsignados = 0;
-    foreach ($productos as $codigo => $producto) {
-        if (!in_array($codigo, $codigosConFoto)) {
-            // Solo actualizar si aún no tiene foto o si su foto no existe
-            if (empty($producto->foto)) {
-                $producto->foto = '/default.png';
-                $producto->save();
-                $defaultAsignados++;
-            }
-        }
+
+    private function validar(Request $request): void
+    {
+        $request->validate([
+            'foto' => 'nullable|image|max:2048',
+            'codigo' => 'nullable|string|max:255',
+            'stock_fisico' => 'nullable|string|max:255',
+            'stock_transito' => 'nullable|string|max:255',
+            'precio' => 'nullable|numeric',
+            'puntos' => 'nullable|integer|min:0',
+            'puntos_compra' => 'nullable|integer|min:0',
+        ]);
     }
- 
-    return redirect()->route('adm.producto')->with('fotos_masivas', [
-        'asignadas'   => $asignadas,
-        'default'     => $defaultAsignados,
-        'sin_producto' => $sinProducto,
-        'errores'     => $errores,
-    ]);
-}
+
+    private function completar(Producto $producto, Request $request): void
+    {
+        $producto->marca_id = $request->input('marca_id') ?: null;
+        $producto->orden = $request->input('orden');
+        $producto->nombre = $request->input('nombre');
+        $producto->codigo = $request->input('codigo');
+        $producto->stock_fisico = $request->input('stock_fisico');
+        $producto->stock_transito = $request->input('stock_transito');
+        $producto->descripcion = $request->input('descripcion');
+        $producto->precio = $request->filled('precio') ? $request->input('precio') : null;
+        $producto->puntos = $request->filled('puntos') ? $request->input('puntos') : null;
+        $producto->puntos_compra = $request->filled('puntos_compra') ? $request->input('puntos_compra') : null;
+        $producto->caracteristicas = $this->procesarLista($request, 'caracteristicas', self::CARACTERISTICAS, $producto->caracteristicas, 'productos');
+        $producto->foto = $this->procesarArchivo($request, 'foto', $producto->foto, 'productos');
+
+        $producto->destacado = $request->boolean('destacado');
+        $producto->oferta = $request->boolean('oferta');
+        $producto->mas_vendido = $request->boolean('mas_vendido');
+        $producto->descubre_mas = $request->boolean('descubre_mas');
+        $producto->active = $request->has('active') ? $request->boolean('active') : ($producto->active ?? true);
+    }
 }

@@ -20,14 +20,13 @@
         <hr class="my-3">
 
         <form method="POST"
-              action="{{ route('adm.home-update') }}"
-              enctype="multipart/form-data">
+              action="{{ route('adm.home-update') }}">
             @csrf
 
             {{-- Título 1 --}}
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2" for="titulo1">
-                    Título 1
+                    Título 1 (Lo más nuevo)
                 </label>
                 <input type="text"
                        id="titulo1"
@@ -40,132 +39,11 @@
                 @enderror
             </div>
 
-            {{-- Foto 1 --}}
-            <div class="mb-4">
-                <label class="block text-gray-700 font-medium mb-2" for="foto1">
-                    Foto 1 (recomendado 1251x343) / (2MB máximo)
-                </label>
-
-                @if (!empty($home->foto1))
-                    <img src="{{ $home->foto1 }}"
-                         class="mb-3 w-full max-w-[1251px] max-h-[343px] object-cover rounded"
-                         id="preview_foto1">
-                @else
-                    <img src=""
-                         class="mb-3 w-full max-w-[1251px] max-h-[343px] object-cover rounded hidden"
-                         id="preview_foto1">
-                @endif
-
-                <input type="file"
-                       name="foto1"
-                       id="foto1"
-                       accept="image/*"
-                       onchange="previewImage(this, 'preview_foto1')"
-                       class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-                @error('foto1')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Foto 1 Texto 1 --}}
-            <div class="mb-4">
-                <label class="block text-gray-700 font-medium mb-2" for="foto1_texto1">
-                    Texto Foto 1 - Línea 1
-                </label>
-                <input type="text"
-                       id="foto1_texto1"
-                       name="foto1_texto1"
-                       value="{{ old('foto1_texto1', $home->foto1_texto1) }}"
-                       class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-                @error('foto1_texto1')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Foto 1 Texto 2 --}}
-            <div class="mb-4">
-                <label class="block text-gray-700 font-medium mb-2" for="foto1_texto2">
-                    Texto Foto 1 - Línea 2
-                </label>
-                <input type="text"
-                       id="foto1_texto2"
-                       name="foto1_texto2"
-                       value="{{ old('foto1_texto2', $home->foto1_texto2) }}"
-                       class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-                @error('foto1_texto2')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Foto 1 Texto 3 --}}
-            <div class="mb-4">
-                <label class="block text-gray-700 font-medium mb-2" for="foto1_texto3">
-                    Texto Foto 1 - Línea 3
-                </label>
-                <input type="text"
-                       id="foto1_texto3"
-                       name="foto1_texto3"
-                       value="{{ old('foto1_texto3', $home->foto1_texto3) }}"
-                       class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-                @error('foto1_texto3')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Texto Botón --}}
-            <div class="mb-4">
-                <label class="block text-gray-700 font-medium mb-2" for="foto1_texto_boton">
-                    Texto Botón
-                </label>
-                <input type="text"
-                       id="foto1_texto_boton"
-                       name="foto1_texto_boton"
-                       value="{{ old('foto1_texto_boton', $home->foto1_texto_boton) }}"
-                       class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-                @error('foto1_texto_boton')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Foto 2 --}}
-            <div class="mb-4">
-                <label class="block text-gray-700 font-medium mb-2" for="foto2">
-                    Foto 2 (recomendado 673x600) / (2MB máximo)
-                </label>
-
-                @if (!empty($home->foto2))
-                    <img src="{{ $home->foto2 }}"
-                         class="mb-3 w-full max-w-[673px] max-h-[600px] object-cover rounded"
-                         id="preview_foto2">
-                @else
-                    <img src=""
-                         class="mb-3 w-full max-w-[673px] max-h-[600px] object-cover rounded hidden"
-                         id="preview_foto2">
-                @endif
-
-                <input type="file"
-                       name="foto2"
-                       id="foto2"
-                       accept="image/*"
-                       onchange="previewImage(this, 'preview_foto2')"
-                       class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-                @error('foto2')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
             {{-- Título 2 --}}
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2" for="titulo2">
-                    Título 2
+                    Título 2 (Nuestras ofertas)
                 </label>
-
                 <input type="text"
                        id="titulo2"
                        name="titulo2"
@@ -177,28 +55,11 @@
                 @enderror
             </div>
 
-            {{-- Descripción --}}
-            <div class="mb-4">
-                <label class="block text-gray-700 font-medium mb-2" for="descripcion">
-                    Descripción
-                </label>
-
-                <textarea name="descripcion"
-                          id="descripcion"
-                          rows="4"
-                          class="ckeditor w-full border border-gray-300 rounded px-4 py-2">{!! old('descripcion', $home->descripcion) !!}</textarea>
-
-                @error('descripcion')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
             {{-- Título 3 --}}
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2" for="titulo3">
-                    Título 3
+                    Título 3 (Categorías)
                 </label>
-
                 <input type="text"
                        id="titulo3"
                        name="titulo3"
@@ -210,7 +71,53 @@
                 @enderror
             </div>
 
-            
+            {{-- Título 4 --}}
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2" for="titulo4">
+                    Título 4 (Novedades destacadas)
+                </label>
+                <input type="text"
+                       id="titulo4"
+                       name="titulo4"
+                       value="{{ old('titulo4', $home->titulo4) }}"
+                       class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                @error('titulo4')
+                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Título 5 --}}
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2" for="titulo5">
+                    Título 5 (Descubre más)
+                </label>
+                <input type="text"
+                       id="titulo5"
+                       name="titulo5"
+                       value="{{ old('titulo5', $home->titulo5) }}"
+                       class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                @error('titulo5')
+                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Título 6 --}}
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2" for="titulo6">
+                    Título 6 (Lo más vendido)
+                </label>
+                <input type="text"
+                       id="titulo6"
+                       name="titulo6"
+                       value="{{ old('titulo6', $home->titulo6) }}"
+                       class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                @error('titulo6')
+                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
 
             <div class="flex gap-4">
                 <button type="submit"
@@ -224,7 +131,3 @@
 </div>
 
 @endsection
-
-@push('scripts')
-    @include('includes.ckeditor-init')
-@endpush

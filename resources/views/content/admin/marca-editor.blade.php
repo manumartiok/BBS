@@ -6,7 +6,7 @@
 
    {{-- cabezal --}}
     <div>
-        <h3 class="text-[20px] font-bold text-gray-500">Editar Marca</h3>
+        <h3 class="text-[20px] font-bold text-gray-500">Editar Categoría</h3>
         <hr class="mx-6">
     </div>
     
@@ -14,7 +14,7 @@
     <div class="mx-20 pt-6" id="app">
         <div class="border border-rounded p-4">
             <div>
-                <h3 class="text-[18px] font-semibold text-gray-600">Editar marca</h3>
+                <h3 class="text-[18px] font-semibold text-gray-600">Editar categoría</h3>
             </div>
             <hr class="my-3">
             
@@ -52,7 +52,7 @@
                            class="w-full border border-gray-300 rounded px-4 py-2">
                 </div>
 
-                {{-- Nombre de la marca --}}
+                {{-- Nombre de la categoría --}}
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">Nombre</label>
                     <input type="text" name="nombre" value="{{ $marca->nombre ?? '' }}"

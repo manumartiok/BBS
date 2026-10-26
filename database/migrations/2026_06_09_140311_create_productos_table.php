@@ -17,9 +17,12 @@ return new class extends Migration
             $table->string('orden')->nullable();
             $table->string('nombre')->nullable();
             $table->string('codigo')->nullable();
+            $table->string('stock_fisico')->nullable();
+            $table->string('stock_transito')->nullable();
+            $table->text('descripcion')->nullable();
             $table->decimal('precio', 10, 2)->nullable();
+            $table->json('caracteristicas')->nullable();
             $table->string('foto')->nullable();
-            $table->string('archivo')->nullable();
             $table->boolean('active')->default(true);
             $table->boolean('destacado')->default(true);
             $table->timestamps();

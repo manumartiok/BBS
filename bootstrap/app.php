@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Registrar alias de middlewares
         $middleware->alias([
             'web.usuario.auth' => \App\Http\Middleware\WebUsuarioAuth::class,
+            'usuario.publico.auth' => \App\Http\Middleware\UsuarioPublicoAuth::class,
         ]);
 
         // Idioma del sitio (config/sitio.php)

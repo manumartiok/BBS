@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ManejaCarrito;
 use App\Mail\PedidoConfirmacionMail;
 use App\Models\CarritoPendiente;
+use App\Models\Cotizacion;
 use App\Models\Pedido;
 use App\Models\Producto;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -14,65 +16,7 @@ use Throwable;
 
 class PedidoController extends Controller
 {
-    private function descuentosDelUsuario($usuario): array
-    {
-        return collect(range(1, 5))
-            ->map(fn ($i) => (float) data_get($usuario, "descuento{$i}", 0))
-            ->filter(fn ($d) => $d > 0)
-            ->values()
-            ->all();
-    }
-
-    private function aplicarDescuentos(float $precio, array $descuentos): float
-    {
-        foreach ($descuentos as $descuento) {
-            $precio *= 1 - ($descuento / 100);
-        }
-
-        return $precio;
-    }
-
-    private function cargarCarritoPendiente($usuario): array
-    {
-        if (!$usuario) {
-            return session('carrito', []);
-        }
-
-        $carrito = session('carrito', []);
-        if (!empty($carrito)) {
-            $this->guardarCarritoPendiente($usuario, $carrito);
-            return $carrito;
-        }
-
-        $pendiente = CarritoPendiente::where('usuario_id', $usuario->id)
-            ->whereNull('cliente_id')
-            ->first();
-        $carrito = $pendiente?->items ?: [];
-
-        if (!empty($carrito)) {
-            session(['carrito' => $carrito]);
-        }
-
-        return $carrito;
-    }
-
-    private function guardarCarritoPendiente($usuario, array $carrito): void
-    {
-        if (!$usuario) {
-            return;
-        }
-
-        $query = CarritoPendiente::where('usuario_id', $usuario->id)->whereNull('cliente_id');
-        if (empty($carrito)) {
-            $query->delete();
-            return;
-        }
-
-        CarritoPendiente::updateOrCreate(
-            ['usuario_id' => $usuario->id, 'cliente_id' => null],
-            ['items' => $carrito]
-        );
-    }
+    use ManejaCarrito;
 
     public function index()
     {
@@ -87,7 +31,7 @@ class PedidoController extends Controller
                 continue;
             }
 
-            $precioBase = (float) ($producto->precio ?? 0);
+            $precioBase = (float) $producto->precio_pesos;
             $productosCarrito[] = [
                 'producto' => $producto,
                 'cantidad' => (int) ($item['cantidad'] ?? 1),
@@ -96,7 +40,9 @@ class PedidoController extends Controller
             ];
         }
 
-        return view('content.web.webcarrito', compact('productosCarrito', 'usuario', 'descuentos'));
+        $dolar = Cotizacion::dolar();
+
+        return view('content.web.webcarrito', compact('productosCarrito', 'usuario', 'descuentos', 'dolar'));
     }
 
     public function agregar(Request $request)
@@ -111,10 +57,14 @@ class PedidoController extends Controller
             return response()->json(['success' => false, 'message' => 'Producto no encontrado'], 404);
         }
 
+        if (is_null($producto->precio_pesos)) {
+            return response()->json(['success' => false, 'message' => 'Precio no disponible por el momento.'], 503);
+        }
+
         $usuario = auth('web_usuario')->user();
         $carrito = $this->cargarCarritoPendiente($usuario);
         $cantidad = (int) $validated['cantidad'];
-        $precioBase = (float) $producto->precio;
+        $precioBase = (float) $producto->precio_pesos;
 
         if (isset($carrito[$producto->id])) {
             $carrito[$producto->id]['cantidad'] += $cantidad;
@@ -185,8 +135,8 @@ class PedidoController extends Controller
     public function completar(Request $request)
     {
         $request->validate([
-            'entrega' => 'required|in:retiro,reparto,convenir',
-            'forma_pago' => 'required|in:contado,cuenta_corriente',
+            'entrega' => 'required|in:mercado_flex,transporte_terminal,retiro_local',
+            'forma_pago' => 'required|in:mercado_pago,transferencia,efectivo',
             'mensaje' => 'nullable|string|max:2000',
             'archivo' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
@@ -205,49 +155,18 @@ class PedidoController extends Controller
             return response()->json(['success' => false, 'message' => 'El carrito esta vacio.'], 422);
         }
 
-        $descuentos = $this->descuentosDelUsuario($usuario);
-        $items = [];
-        $subtotalSinDescuento = 0;
-        $subtotalConDescuentoItem = 0;
-
-        foreach ($carrito as $productoId => $item) {
-            $producto = Producto::where('active', true)->find($productoId);
-            if (!$producto) {
-                continue;
-            }
-
-            $cantidad = (int) ($item['cantidad'] ?? 0);
-            if ($cantidad < 1) {
-                continue;
-            }
-
-            $precioBase = (float) $producto->precio;
-            $precioConDescuento = $this->aplicarDescuentos($precioBase, $descuentos);
-            $subtotalItem = $precioConDescuento * $cantidad;
-            $subtotalSinDescuento += $precioBase * $cantidad;
-            $subtotalConDescuentoItem += $subtotalItem;
-
-            $items[] = [
-                'producto_id' => $producto->id,
-                'codigo' => $producto->codigo ?? '-',
-                'nombre' => $producto->nombre ?? '-',
-                'precio_base' => $precioBase,
-                'precio_con_descuento' => $precioConDescuento,
-                'cantidad' => $cantidad,
-                'subtotal' => $subtotalItem,
-            ];
+        if (is_null(Cotizacion::dolar())) {
+            return response()->json(['success' => false, 'message' => 'No se pudo calcular los precios en pesos. Intenta nuevamente más tarde.'], 503);
         }
+
+        $armado = $this->armarItemsDelCarrito($carrito, $this->descuentosDelUsuario($usuario));
+        $items = $armado['items'];
+        $totales = $armado['totales'];
+        $puntos = $armado['puntos'];
 
         if (empty($items)) {
             return response()->json(['success' => false, 'message' => 'No se encontraron productos validos en el carrito.'], 422);
         }
-
-        $descuentoFormaPagoPorcentaje = $request->forma_pago === 'contado' ? 5 : 0;
-        $descuentoPorItems = $subtotalSinDescuento - $subtotalConDescuentoItem;
-        $descuentoFormaPago = $subtotalConDescuentoItem * ($descuentoFormaPagoPorcentaje / 100);
-        $subtotalFinal = $subtotalConDescuentoItem - $descuentoFormaPago;
-        $iva = $subtotalFinal * 0.21;
-        $total = $subtotalFinal + $iva;
 
         $pedido = [
             'cliente' => [
@@ -258,35 +177,28 @@ class PedidoController extends Controller
                 'telefono' => $usuario->telefono ?? '-',
             ],
             'entrega' => $request->entrega,
-            'entrega_label' => ['retiro' => 'Retiro cliente', 'reparto' => 'Reparto', 'convenir' => 'A convenir'][$request->entrega],
+            'entrega_label' => ['mercado_flex' => 'Mercado Flex', 'transporte_terminal' => 'Transporte a la terminal', 'retiro_local' => 'Retiro en local'][$request->entrega],
             'forma_pago' => $request->forma_pago,
-            'forma_pago_label' => ['contado' => 'Contado', 'cuenta_corriente' => 'Cuenta corriente'][$request->forma_pago],
+            'forma_pago_label' => ['mercado_pago' => 'Mercado Pago', 'transferencia' => 'Transferencia bancaria', 'efectivo' => 'Efectivo (únicamente en local)'][$request->forma_pago],
             'mensaje' => $request->mensaje ?? '',
             'items' => $items,
-            'totales' => [
-                'subtotal_sin_descuento' => $subtotalSinDescuento,
-                'descuento_items' => $descuentoPorItems,
-                'descuento_forma_pago_porcentaje' => $descuentoFormaPagoPorcentaje,
-                'descuento_forma_pago' => $descuentoFormaPago,
-                'subtotal' => $subtotalFinal,
-                'iva' => $iva,
-                'total' => $total,
-            ],
+            'totales' => $totales,
         ];
 
         try {
-            DB::transaction(function () use ($usuario, $request, $subtotalFinal, $iva, $total, $pedido, $items, $carrito) {
+            DB::transaction(function () use ($usuario, $request, $totales, $items, $carrito, $puntos) {
                 $pedidoModel = Pedido::create([
                     'usuario_id' => $usuario->id,
                     'cliente_id' => $usuario->id,
-                    'estado' => 'en_preparacion',
+                    'estado' => 'pendiente',
                     'entrega' => $request->entrega,
                     'forma_pago' => $request->forma_pago,
                     'mensaje' => $request->mensaje ?? '',
-                    'subtotal' => $subtotalFinal,
-                    'iva' => $iva,
-                    'total' => $total,
-                    'totales' => $pedido['totales'],
+                    'subtotal' => $totales['subtotal'],
+                    'iva' => $totales['iva'],
+                    'total' => $totales['total'],
+                    'puntos_ganados' => $puntos,
+                    'totales' => $totales,
                 ]);
 
                 foreach ($items as $item) {
@@ -300,6 +212,11 @@ class PedidoController extends Controller
                         'subtotal' => $item['subtotal'],
                         'carrito_item' => $carrito[$item['producto_id']] ?? null,
                     ]);
+                }
+
+                // el cliente suma los puntos por compra de lo que lleva
+                if ($puntos > 0) {
+                    $usuario->increment('puntos', $puntos);
                 }
             });
         } catch (Throwable $e) {
@@ -327,6 +244,8 @@ class PedidoController extends Controller
 
         return response()->json([
             'success' => true,
+            'puntos_ganados' => $puntos,
+            'puntos_total' => (int) $usuario->fresh()->puntos,
             'message' => empty($erroresCorreo)
                 ? 'Pedido realizado con exito.'
                 : 'Pedido realizado, pero no se pudo enviar uno de los emails.',
@@ -405,11 +324,13 @@ class PedidoController extends Controller
         $validated = $request->validate([
             'pedido_id' => 'required|exists:pedidos,id',
             'fecha_entrega' => 'nullable|date',
-            'estado' => 'required|in:en_preparacion,entregado,cancelado',
+            'guia_transporte' => 'nullable|string|max:100',
+            'estado' => 'required|in:' . implode(',', array_keys(Pedido::ESTADOS)),
         ]);
 
         Pedido::findOrFail($validated['pedido_id'])->update([
             'fecha_entrega' => $validated['fecha_entrega'] ?? null,
+            'guia_transporte' => $validated['guia_transporte'] ?? null,
             'estado' => $validated['estado'],
         ]);
 
@@ -425,7 +346,11 @@ class PedidoController extends Controller
 
     public function adminSwitch(Pedido $pedido)
     {
-        $pedido->update(['estado' => $pedido->estado === 'entregado' ? 'en_preparacion' : 'entregado']);
+        // Avanza al siguiente estado y, tras el último, vuelve al primero
+        $estados = array_keys(Pedido::ESTADOS);
+        $actual = array_search($pedido->estado, $estados, true);
+        $siguiente = $estados[$actual === false ? 0 : ($actual + 1) % count($estados)];
+        $pedido->update(['estado' => $siguiente]);
         return back()->with('success', 'Estado actualizado correctamente.');
     }
 }

@@ -6,7 +6,7 @@
 
    {{-- cabezal --}}
     <div>
-        <h3 class="text-[20px] font-bold text-gray-500">Crear Marca</h3>
+        <h3 class="text-[20px] font-bold text-gray-500">Crear Categoría</h3>
         <hr class="mx-6">
     </div>
     
@@ -14,7 +14,7 @@
     <div class="mx-20 pt-6">
         <div class="border border-rounded p-4">
             <div>
-                <h3 class="text-[18px] font-semibold text-gray-600">Nueva marca</h3>
+                <h3 class="text-[18px] font-semibold text-gray-600">Nueva categoría</h3>
             </div>
             <hr class="my-3">
             

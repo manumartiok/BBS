@@ -25,6 +25,7 @@
             });
         }
         if (btnDesktop) btnDesktop.addEventListener('click', openModal);
+        document.querySelectorAll('[data-abrir-modal-usuario]').forEach(el => el.addEventListener('click', openModal));
         if (closeBtn) closeBtn.addEventListener('click', closeModal);
         if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
@@ -57,6 +58,10 @@
                 open();
             });
         }
+        document.querySelectorAll('[data-abrir-login]').forEach(el => el.addEventListener('click', e => {
+            e.preventDefault();
+            open();
+        }));
         if (btnCerrar) btnCerrar.addEventListener('click', close);
         if (modal) modal.addEventListener('click', e => { if (e.target === modal) close(); });
         document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
@@ -92,13 +97,13 @@
                     Swal.fire({ icon: 'success', title: 'Login exitoso', showConfirmButton: false, timer: 1500 })
                         .then(() => window.location.href = data.redirect);
                 } else {
-                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#DE2222' });
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0D1A35' });
                     btn.disabled = false;
                     btn.innerHTML = orig;
                 }
             })
             .catch(() => {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrio un error. Intenta nuevamente.', confirmButtonColor: '#DE2222' });
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrio un error. Intenta nuevamente.', confirmButtonColor: '#0D1A35' });
                 btn.disabled = false;
                 btn.innerHTML = orig;
             });

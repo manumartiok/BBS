@@ -3,73 +3,106 @@
 @section('title', 'Mis pedidos')
 
 @section('content')
-<div class="pt-[10px] pb-[180px] h-full letra max-w-[1366px] mx-auto px-[5%] md:px-[71px]">
-    <h3 class="text-[12px] mb-[76px] pt-[20px]">
-        <a class="font-bold" href="{{ route('home') }}">Inicio</a> > Mis pedidos
-    </h3>
-
-    <div class="overflow-x-auto">
-        <table class="w-full min-w-[920px] border-collapse">
-            <thead>
-                <tr class="bg-[#FAF8FB] text-[#222222] font-bold text-[14px] h-[52px]">
-                    <th class="w-[120px]"></th>
-                    <th class="px-3 text-left">N de pedido</th>
-                    <th class="px-3 text-left">Fecha de compra</th>
-                    <th class="px-3 text-left">Estado</th>
-                    <th class="px-3 text-left">Importe</th>
-                    <th class="px-3 text-center w-[190px]"></th>
-                    <th class="px-3 text-center w-[190px]"></th>
-                </tr>
-            </thead>
-            <tbody class="text-[14px]">
-                @forelse($pedidos as $pedido)
-                    @php
-                        $estadoLabel = [
-                            'en_preparacion' => 'EN PREPARACION',
-                            'entregado' => 'ENTREGADO',
-                            'cancelado' => 'CANCELADO',
-                        ][$pedido->estado] ?? strtoupper(str_replace('_', ' ', $pedido->estado));
-                    @endphp
-                    <tr class="border-b border-[#EEDAF5] h-[98px]">
-                        <td class="py-[10px]">
-                            <div class="w-[80px] h-[80px] border border-[#EFEFEF] rounded-[3px] flex items-center justify-center text-[#651080]">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="43" height="43" viewBox="0 0 43 43" fill="none">
-  <path d="M25.0837 3.58337V10.75C25.0837 11.7004 25.4612 12.6118 26.1332 13.2838C26.8052 13.9558 27.7166 14.3334 28.667 14.3334H35.8337M17.917 16.125H14.3337M28.667 23.2917H14.3337M28.667 30.4584H14.3337M26.8753 3.58337H10.7503C9.79997 3.58337 8.88853 3.9609 8.21653 4.63291C7.54452 5.30491 7.16699 6.21635 7.16699 7.16671V35.8334C7.16699 36.7837 7.54452 37.6952 8.21653 38.3672C8.88853 39.0392 9.79997 39.4167 10.7503 39.4167H32.2503C33.2007 39.4167 34.1121 39.0392 34.7841 38.3672C35.4561 37.6952 35.8337 36.7837 35.8337 35.8334V12.5417L26.8753 3.58337Z" stroke="#651080" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-                            </div>
-                        </td>
-                        <td class="px-3 text-[#222222]">{{ str_pad($pedido->id, 10, '0', STR_PAD_LEFT) }}</td>
-                        <td class="px-3 text-[#222222]">{{ $pedido->created_at?->format('d/m/Y') }}</td>
-                        <td class="px-3 text-[#222222] font-bold text-[12px]">{{ $estadoLabel }}</td>
-                        <td class="px-3 text-[#222222]">$ {{ number_format($pedido->total, 2, ',', '.') }}</td>
-                        <td class="px-3">
-                            <a href="{{ route('web-pedidos.pdf', $pedido) }}" target="_blank" rel="noopener"
-                                class="flex items-center justify-center w-full h-[38px] border border-[#333333] rounded-[2px] text-[#333333] text-[13px] font-bold uppercase hover:bg-gray-100 transition">
-                                Ver detalle
-                            </a>
-                        </td>
-                        <td class="px-3">
-                            <form action="{{ route('web-pedidos.recomprar', $pedido) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="w-full h-[38px] bg-[#333333] rounded-[2px] text-white text-[13px] font-bold uppercase hover:bg-[#111111] transition">
-                                    Recomprar
-                                </button>
-                            </form>
-                        </td>
+<div class="w-full text-black pt-[71px] pb-[180px]" style="font-family: 'Montserrat', sans-serif;">
+    <div class="max-w-[1366px] mx-auto px-[5%] md:px-[71px]">
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[1224px] table-fixed border-collapse text-[16px]">
+                <colgroup>
+                    <col style="width: 110px">
+                    <col style="width: 88px">
+                    <col style="width: 204px">
+                    <col style="width: 217px">
+                    <col style="width: 120px">
+                    <col style="width: 182px">
+                    <col style="width: 157px">
+                    <col style="width: 146px">
+                </colgroup>
+                <thead>
+                    <tr class="bg-[#F6F8FA] h-[50px] border-b border-[#D9D9D9] font-semibold uppercase">
+                        <th></th>
+                        <th class="text-right font-semibold">N° pedido</th>
+                        <th class="text-left font-semibold pl-[60px]">Fecha</th>
+                        <th class="text-left font-semibold">N° guía transporte</th>
+                        <th class="text-right font-semibold">Importe</th>
+                        <th class="text-left font-semibold pl-[60px]">Estado</th>
+                        <th></th>
+                        <th></th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" class="p-8 text-center text-gray-600 bg-white">
-                            Todavia no realizaste pedidos.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @forelse($pedidos as $pedido)
+                        @php
+                            $total = (float) $pedido->total;
+                            $importe = '$' . number_format($total, fmod($total, 1) == 0 ? 0 : 2, ',', '.');
+                        @endphp
+                        <tr class="h-[115px] border-b border-[#D9D9D9]">
+                            <td>
+                                <div class="w-[80px] h-[83px] border border-[#D9D9D9] rounded-[12px] flex items-center justify-center">
+                                    <img src="{{ asset('assets/img/pedidos/file-text.svg') }}" alt="" class="w-[43px] h-[43px]">
+                                </div>
+                            </td>
+                            <td class="text-right">{{ $pedido->id }}</td>
+                            <td class="pl-[60px]">{{ $pedido->created_at?->format('d/m/Y') }}</td>
+                            <td>
+                                @if($pedido->guia_transporte)
+                                    <span class="inline-flex items-center gap-[2px]">
+                                        <span>{{ $pedido->guia_transporte }}</span>
+                                        <button type="button" class="btn-copiar-guia" data-guia="{{ $pedido->guia_transporte }}" title="Copiar" aria-label="Copiar número de guía">
+                                            <img src="{{ asset('assets/img/pedidos/copy.svg') }}" alt="" class="w-[12.2px] h-[15px] max-w-none">
+                                        </button>
+                                    </span>
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td class="text-right">{{ $importe }}</td>
+                            <td class="pl-[60px]" style="color: {{ $pedido->estado_color }}">{{ $pedido->estado_texto }}</td>
+                            <td>
+                                <a href="{{ route('web-pedidos.pdf', $pedido) }}" target="_blank" rel="noopener"
+                                   class="inline-flex items-center justify-center p-[16px] border border-black rounded-[22px] font-semibold uppercase whitespace-nowrap leading-none hover:bg-black hover:text-white transition">
+                                    Ver online
+                                </a>
+                            </td>
+                            <td class="text-right">
+                                <form action="{{ route('web-pedidos.recomprar', $pedido) }}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center p-[16px] bg-black text-white border border-black rounded-[22px] font-semibold uppercase whitespace-nowrap leading-none hover:bg-white hover:text-black transition">
+                                        Recomprar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" class="py-10 text-center text-gray-600">
+                                Todavia no realizaste pedidos.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
 
-    <div class="mt-8">
-        {{ $pedidos->links() }}
+        <div class="mt-8">
+            {{ $pedidos->links() }}
+        </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+document.querySelectorAll('.btn-copiar-guia').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(btn.dataset.guia);
+            btn.title = 'Copiado';
+            setTimeout(() => btn.title = 'Copiar', 1500);
+        } catch (e) {
+            // sin permiso de portapapeles: no hacemos nada
+        }
+    });
+});
+</script>
 @endsection

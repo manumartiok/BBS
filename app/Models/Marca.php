@@ -14,4 +14,9 @@ class Marca extends Model
         'active',
         'destacado',
     ];
+
+    public function productos()
+    {
+        return $this->hasMany(Producto::class);
+    }
 }

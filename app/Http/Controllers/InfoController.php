@@ -26,18 +26,14 @@ class InfoController extends Controller
     {
         // Validación solo de texto
         $request->validate([
-            'texto1'    => 'nullable|string',
-            'condicion' => 'nullable|string',
-            'texto2'    => 'nullable|string',
+            'texto1' => 'nullable|string',
         ]);
 
         // Obtener el primer registro o crear uno nuevo
         $info = Info::first() ?? new Info();
 
         // Asignar campos
-        $info->texto1    = $request->input('texto1');
-        $info->condicion = $request->input('condicion');
-        $info->texto2    = $request->input('texto2');
+        $info->texto1 = $request->input('texto1');
 
         // Guardar
         $info->save();

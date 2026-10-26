@@ -9,7 +9,7 @@
         <h3 class="text-[20px] font-bold text-gray-500">Crear Producto</h3>
         <hr class="mx-6">
     </div>
-    
+
     {{-- Formulario --}}
     <div class="mx-20 pt-6">
         <div class="border border-rounded p-4">
@@ -17,7 +17,7 @@
                 <h3 class="text-[18px] font-semibold text-gray-600">Nuevo producto</h3>
             </div>
             <hr class="my-3">
-            
+
             <form method="POST"
                   action="{{ route('adm.producto-store') }}"
                   enctype="multipart/form-data">
@@ -39,66 +39,13 @@
                     </div>
                 @endif
 
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2">Marca</label>
-                    <select name="marca_id" class="w-full border border-gray-300 rounded px-4 py-2">
-                        <option value="">-- Seleccionar --</option>
-                        @foreach($marcas as $marca)
-                            <option value="{{ $marca->id }}" {{ old('marca_id') == $marca->id ? 'selected' : '' }}>{{ $marca->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2">
-                        Foto (recomendado 510x400) / (2MB máximo)
-                    </label>
-                          <input type="file" name="foto"
-                              class="w-full border border-gray-300 rounded px-4 py-2">
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2">Archivo (opcional)</label>
-                          <input type="file" name="archivo"
-                              class="w-full border border-gray-300 rounded px-4 py-2">
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2">Orden</label>
-                          <input type="text" name="orden" value="{{ old('orden') }}"
-                              class="w-full border border-gray-300 rounded px-4 py-2">
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2">Código</label>
-                          <input type="text" name="codigo" value="{{ old('codigo') }}"
-                              class="w-full border border-gray-300 rounded px-4 py-2">
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2">Nombre</label>
-                          <input type="text" name="nombre" value="{{ old('nombre') }}"
-                              class="w-full border border-gray-300 rounded px-4 py-2">
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2">Precio</label>
-                          <input type="number" step="0.01" name="precio" value="{{ old('precio') }}"
-                              class="w-full border border-gray-300 rounded px-4 py-2">
-                </div>
-
-                <div class="mb-4">
-                    <label class="inline-flex items-center">
-                        <input type="checkbox" name="destacado" value="1" class="mr-2" checked>
-                        <span class="text-gray-700">Destacado</span>
-                    </label>
-                </div>
+                @include('content.admin.partials.producto-campos')
 
                 <button type="submit" class="border rounded p-4 bg-white hover:bg-gray-50 transition-colors">
                     Crear
                 </button>
             </form>
-        </div>            
+        </div>
     </div>
 
     <hr class="my-10">
@@ -111,4 +58,6 @@
         </div>
     </div>
 
+    @include('includes.modulo-scripts')
+    @include('includes.ckeditor-init')
 @endsection

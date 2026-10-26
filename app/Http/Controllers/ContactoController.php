@@ -26,20 +26,17 @@ class ContactoController extends Controller
     {
         $contacto = Contacto::find($request->contactos_id) ?? new Contacto();
 
-        $contacto->latitud   = $request->latitud;
-        $contacto->longitud  = $request->longitud;
-        $contacto->ubicacion=$request->ubicacion;
+        $contacto->ubicacion = $request->ubicacion;
         $contacto->direccion = $request->direccion;
 
-        $contacto->mail  = $request->mail;
-        $contacto->mail2 = $request->mail2;
-        $contacto->mail3 = $request->mail3;
+        $contacto->mail = $request->mail;
 
-        $contacto->telefono  = $request->telefono;
-        $contacto->telefono2 = $request->telefono2;
+        $contacto->telefono = $request->telefono;
 
-        $contacto->instagram  = $request->instagram;
-        $contacto->facebook = $request->facebook;
+        $contacto->instagram = $request->instagram;
+        $contacto->facebook  = $request->facebook;
+        $contacto->youtube   = $request->youtube;
+        $contacto->linkedin  = $request->linkedin;
 
         $contacto->whatssap = $request->whatssap;
 

@@ -26,7 +26,7 @@
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
         <h2 class="text-lg font-bold text-gray-700 mb-1">Importar productos</h2>
         <p class="text-sm text-gray-500 mb-4">
-            Columnas esperadas: <em>codigo, descripcion, marca, precio</em>.
+            Columnas esperadas: <em>nombre, codigo, stock_fisico, stock_transito, descripcion, marca, precio, puntos, puntos_compra</em>. Si ya existe un producto con ese nombre, se actualiza.
         </p>
         <form action="{{ route('adm.producto-import') }}" method="POST" enctype="multipart/form-data">
             @csrf
@@ -49,10 +49,10 @@
         <h2 class="text-lg font-bold text-gray-700 mb-1">Asignación masiva de fotos</h2>
         <p class="text-sm text-gray-500 mb-1">
             Seleccioná las fotos que querés subir. Cada foto se asignará automáticamente al producto cuyo
-            <strong>código</strong> coincida con el <strong>nombre del archivo</strong> (sin extensión).
+            <strong>nombre</strong> coincida con el <strong>nombre del archivo</strong> (sin extensión).
         </p>
         <p class="text-xs text-gray-400 mb-4">
-            Ejemplo: <em>2524.jpg</em> → producto con código <em>2524</em>.
+            Ejemplo: <em>Taladro 500.jpg</em> → producto con nombre <em>Taladro 500</em>.
             Los productos sin foto coincidente recibirán la imagen por defecto.
         </p>
 
@@ -130,7 +130,7 @@
         <div class="flex items-center justify-between px-6 py-3 border rounded gap-4">
             {{-- Buscador --}}
             <form method="GET" action="{{ route('adm.producto') }}" class="flex items-center gap-2 flex-1 flex-wrap">
-                <input name="q" value="{{ request('q') }}" placeholder="Buscar por nombre, código o marca"
+                <input name="q" value="{{ request('q') }}" placeholder="Buscar por nombre, código o categoría"
                     class="w-full max-w-xs border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
 
                 <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white rounded">Buscar</button>
@@ -148,11 +148,15 @@
                     <th class="px-4 py-3 text-left">Orden</th>
                     <th class="px-4 py-3 text-center">Foto</th>
                     <th class="px-4 py-3 text-left">Nombre</th>
-                    <th class="px-4 py-3 text-left">Marca</th>
+                    <th class="px-4 py-3 text-left">Categoría</th>
                     <th class="px-4 py-3 text-left">Código</th>
+                    <th class="px-4 py-3 text-left">Stock físico</th>
                     <th class="px-4 py-3 text-left">Precio</th>
                     <th class="px-4 py-3 text-center">Activo</th>
                     <th class="px-4 py-3 text-center">Destacado</th>
+                    <th class="px-4 py-3 text-center">Oferta</th>
+                    <th class="px-4 py-3 text-center">Más vendido</th>
+                    <th class="px-4 py-3 text-center">Descubre más</th>
                     <th class="px-4 py-3 text-center">Acciones</th>
                 </tr>
             </thead>
@@ -161,13 +165,12 @@
                     <tr class="border-t hover:bg-gray-50 @if(!$productos->hasPages()) cursor-move @endif" data-id="{{ $item->id }}">
                         <td class="px-4 py-3">{{ $item->orden }}</td>
                         <td class="px-4 py-3 text-center">
-                            @if (!empty($item->foto))
-                                <img src="{{ asset($item->foto) }}" alt="{{ $item->nombre }}" class="w-[60px] h-[60px] object-cover mx-auto rounded">
-                            @endif
+                            <img src="{{ $item->foto_url }}" alt="{{ $item->nombre }}" class="w-[60px] h-[60px] object-cover mx-auto rounded">
                         </td>
                         <td class="px-4 py-3 w-64 max-w-64 truncate">{{ $item->nombre }}</td>
                         <td class="px-4 py-3">{{ $item->marca->nombre ?? '' }}</td>
                         <td class="px-4 py-3">{{ $item->codigo }}</td>
+                        <td class="px-4 py-3">{{ $item->stock_fisico }}</td>
                         <td class="px-4 py-3">{{ $item->precio }}</td>
                         <td class="px-4 py-3 text-center">
                             @if ($item->active)
@@ -181,6 +184,27 @@
                                 <a href="{{ route('adm.producto-destacado', $item->id) }}" class="badge bg-green-400 text-white px-4 py-2 rounded">Destacado</a>
                             @else
                                 <a href="{{ route('adm.producto-destacado', $item->id) }}" class="badge bg-red-400 text-white px-4 py-2 rounded">No destacado</a>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            @if ($item->oferta)
+                                <a href="{{ route('adm.producto-oferta', $item->id) }}" class="badge bg-green-400 text-white px-4 py-2 rounded">En oferta</a>
+                            @else
+                                <a href="{{ route('adm.producto-oferta', $item->id) }}" class="badge bg-red-400 text-white px-4 py-2 rounded">Sin oferta</a>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            @if ($item->mas_vendido)
+                                <a href="{{ route('adm.producto-mas-vendido', $item->id) }}" class="badge bg-green-400 text-white px-4 py-2 rounded">Más vendido</a>
+                            @else
+                                <a href="{{ route('adm.producto-mas-vendido', $item->id) }}" class="badge bg-red-400 text-white px-4 py-2 rounded">No vendido</a>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            @if ($item->descubre_mas)
+                                <a href="{{ route('adm.producto-descubre-mas', $item->id) }}" class="badge bg-green-400 text-white px-4 py-2 rounded">Descubre más</a>
+                            @else
+                                <a href="{{ route('adm.producto-descubre-mas', $item->id) }}" class="badge bg-red-400 text-white px-4 py-2 rounded">No descubre</a>
                             @endif
                         </td>
                         <td class="px-4 py-3 text-center space-x-2 font-bold">

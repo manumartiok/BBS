@@ -23,7 +23,7 @@
                     type="text"
                     name="q"
                     value="{{ request('q') }}"
-                    placeholder="Buscar por usuario, email, empresa, localidad, provincia, CUIT, país, CP..."
+                    placeholder="Buscar por usuario, email, razón social, localidad, provincia, CUIT, país, CP..."
                     class="w-full max-w-xl border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
                 <button type="submit"
@@ -44,10 +44,11 @@
                 <tr class="text-gray-700 text-sm uppercase">
                     <th class="px-4 py-3 text-left">Usuario</th>
                     <th class="px-4 py-3 text-left">Email</th>
-                    <th class="px-4 py-3 text-left">Empresa</th>
+                    <th class="px-4 py-3 text-left">Razón social</th>
                     <th class="px-4 py-3 text-left">Localidad</th>
                     <th class="px-4 py-3 text-left">Provincia</th>
-                    {{-- <th class="px-4 py-3 text-left">Rol</th>--}}
+                    <th class="px-4 py-3 text-left">Rol</th>
+                    <th class="px-4 py-3 text-right">Puntos</th>
                     <th class="px-4 py-3 text-left">Descuento</th> 
                     <th class="px-4 py-3 text-center">Activo</th>
                     <th class="px-4 py-3 text-center">Acciones</th>
@@ -59,25 +60,19 @@
                 <tr class="border-t hover:bg-gray-50">
                     <td class="px-4 py-3">{{ $item->usuario }}</td>
                     <td class="px-4 py-3">{{ $item->email }}</td>
-                    <td class="px-4 py-3">{{ $item->empresa ?? '—' }}</td>
+                    <td class="px-4 py-3">{{ $item->razon_social ?: '—' }}</td>
                     <td class="px-4 py-3">{{ $item->localidad ?? '—' }}</td>
                     <td class="px-4 py-3">{{ $item->provincia ?? '—' }}</td>
-                    {{-- <td class="px-4 py-3">
-                    
-                        @if($item->rol == 'cliente')
-                            <span class="badge bg-blue-400 text-white px-3 py-1 rounded text-xs">Cliente</span>
-                        @elseif($item->rol == 'mecanico')
-                            <span class="badge bg-purple-400 text-white px-3 py-1 rounded text-xs">Mecánico</span>
-                        @elseif($item->rol == 'profesional')
-                            <span class="badge bg-orange-400 text-white px-3 py-1 rounded text-xs">Profesional</span>
-                        @elseif($item->rol == 'revendedor')
-                            <span class="badge bg-teal-400 text-white px-3 py-1 rounded text-xs">Revendedor</span>
-                        @elseif($item->rol == 'usuario')
-                            <span class="badge bg-sky-400 text-white px-3 py-1 rounded text-xs">Usuario</span>
+                    <td class="px-4 py-3">
+                        @if($item->rol === 'distribuidor')
+                            <span class="badge bg-blue-400 text-white px-3 py-1 rounded text-xs">Distribuidor</span>
+                        @elseif($item->rol === 'gremio')
+                            <span class="badge bg-purple-400 text-white px-3 py-1 rounded text-xs">Gremio</span>
                         @else
                             <span class="badge bg-gray-400 text-white px-3 py-1 rounded text-xs">Sin asignar</span>
                         @endif
-                    </td>--}}
+                    </td>
+                    <td class="px-4 py-3 text-right">{{ number_format($item->puntos ?? 0, 0, ',', '.') }}</td>
 
                     <td class="px-4 py-3">
                         @php

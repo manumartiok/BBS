@@ -69,12 +69,12 @@
                 >
             </div>
 
-            {{-- Datos de empresa --}}
+            {{-- Datos del usuario --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2">Empresa</label>
-                    <input type="text" name="empresa"
-                        value="{{ old('empresa', $usuario->empresa) }}"
+                    <label class="block text-gray-700 font-medium mb-2">Razón social</label>
+                    <input type="text" name="razon_social"
+                        value="{{ old('razon_social', $usuario->razon_social) }}"
                         class="w-full border rounded px-4 py-2">
                 </div>
                 <div>
@@ -115,30 +115,30 @@
                 </div>
             </div>
 
-            {{-- Rol --}}
-            {{-- <div class="mb-4">
-                <label class="block text-gray-700 font-medium mb-2">Rol</label>
-                <select name="rol" class="w-full border rounded px-4 py-2">
-                    <option value="">Seleccionar rol</option>
-                    <option value="cliente" {{ old('rol', $usuario->rol) == 'cliente' ? 'selected' : '' }}>
-                        Cliente
-                    </option>
-                    <option value="mecanico" {{ old('rol', $usuario->rol) == 'mecanico' ? 'selected' : '' }}>
-                        Mecánico
-                    </option>
-                    <option value="profesional" {{ old('rol', $usuario->rol) == 'profesional' ? 'selected' : '' }}>
-                        Profesional
-                    </option>
-                    <option value="revendedor" {{ old('rol', $usuario->rol) == 'revendedor' ? 'selected' : '' }}>
-                        Revendedor
-                    </option>
-                    <option value="usuario" {{ old('rol', $usuario->rol) == 'usuario' ? 'selected' : '' }}>
-                        Usuario
-                    </option>
-                </select>
+            {{-- Rol y puntos --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">Rol</label>
+                    <select name="rol" class="w-full border rounded px-4 py-2">
+                        <option value="">Seleccionar rol</option>
+                        @foreach(\App\Models\WebUsuario::ROLES as $valor => $texto)
+                            <option value="{{ $valor }}" @selected(old('rol', $usuario->rol) === $valor)>{{ $texto }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">Puntos</label>
+                    <input
+                        type="number"
+                        name="puntos"
+                        min="0"
+                        step="1"
+                        value="{{ old('puntos', $usuario->puntos ?? 0) }}"
+                        class="w-full border rounded px-4 py-2"
+                    >
+                </div>
             </div>
---}}
-      
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 @for ($i = 1; $i <= 5; $i++)
                     <div>

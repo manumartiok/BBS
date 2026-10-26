@@ -19,11 +19,10 @@ class WebUsuarioController extends Controller
             $query->where(function($sub) use ($q) {
                 $sub->where('usuario',       'like', "%{$q}%")
                     ->orWhere('email',        'like', "%{$q}%")
-                    ->orWhere('empresa',      'like', "%{$q}%")
+                    ->orWhere('razon_social', 'like', "%{$q}%")
                     ->orWhere('localidad',    'like', "%{$q}%")
                     ->orWhere('provincia',    'like', "%{$q}%")
                     ->orWhere('cuit',         'like', "%{$q}%")
-                    ->orWhere('pais',         'like', "%{$q}%")
                     ->orWhere('codigo_postal','like', "%{$q}%");
             });
         }
@@ -58,8 +57,9 @@ class WebUsuarioController extends Controller
         'usuarios_id'   => 'required|exists:web_usuarios,id',
         'usuario'       => 'nullable|string|max:255',
         'email'         => 'nullable|email|max:255',
-        'rol'           => 'nullable|in:cliente,mecanico,profesional,revendedor,usuario',
-        'empresa'       => 'nullable|string|max:255',
+        'rol'           => 'nullable|in:' . implode(',', array_keys(WebUsuario::ROLES)),
+        'puntos'        => 'nullable|integer|min:0',
+        'razon_social'  => 'nullable|string|max:255',
         'cuit'          => 'nullable|string|max:255',
         'telefono'      => 'nullable|string|max:255',
         'domicilio'     => 'nullable|string|max:255',
@@ -88,9 +88,11 @@ class WebUsuarioController extends Controller
 
     if ($request->filled('usuario')) $usuario->usuario = $request->usuario;
     if ($request->filled('email'))   $usuario->email   = $request->email;
-    if ($request->filled('rol'))     $usuario->rol     = $request->rol;
 
-    $usuario->empresa       = $request->empresa;
+    $usuario->rol    = $request->rol ?: null;
+    $usuario->puntos = (int) $request->puntos;
+
+    $usuario->razon_social  = $request->razon_social;
     $usuario->cuit          = $request->cuit;
     $usuario->telefono      = $request->telefono;
     $usuario->domicilio     = $request->domicilio;

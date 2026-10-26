@@ -11,15 +11,22 @@ class WebUsuario extends Authenticatable
 
     protected $table = 'web_usuarios';
 
+    // Roles de la zona privada: clave => texto
+    public const ROLES = [
+        'distribuidor' => 'Distribuidor',
+        'gremio' => 'Gremio',
+    ];
+
 protected $fillable = [
-    'usuario', 'email', 'contraseña', 'rol', 'active',
-    'empresa', 'cuit', 'telefono', 'domicilio',
+    'usuario', 'email', 'contraseña', 'rol', 'puntos', 'active',
+    'empresa', 'razon_social', 'cuit', 'telefono', 'domicilio',
     'codigo_postal', 'localidad', 'provincia', 'pais',
     'descuento1', 'descuento2', 'descuento3', 'descuento4', 'descuento5',
 ];
 
 
     protected $casts = [
+        'puntos' => 'integer',
         'descuento1' => 'float',
         'descuento2' => 'float',
         'descuento3' => 'float',

@@ -35,6 +35,9 @@
     $entrega = $esCotizacion
         ? ($cotizacion['entrega_label'] ?? '-')
         : ([
+            'mercado_flex' => 'Mercado Flex',
+            'transporte_terminal' => 'Transporte a la terminal',
+            'retiro_local' => 'Retiro en local',
             'retiro' => 'Retiro cliente',
             'reparto' => 'Reparto Resortes generales',
             'convenir' => 'A convenir',

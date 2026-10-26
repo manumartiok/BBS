@@ -28,6 +28,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'contabilium' => [
+        'url' => env('CONTABILIUM_URL', 'https://rest.contabilium.com'),
+        'email' => env('CONTABILIUM_EMAIL'),
+        'api_key' => env('CONTABILIUM_API_KEY'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

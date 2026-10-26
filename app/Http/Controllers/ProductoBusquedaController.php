@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cotizacion;
 use App\Models\Marca;
 use App\Models\Producto;
-use App\Models\Banner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -12,19 +12,23 @@ class ProductoBusquedaController extends Controller
 {
     public function productos(Request $request)
     {
-        $marcas = $this->marcas();
-        $productos_ban = Banner::seccion('productos');
-        $hayFiltros = $this->hayFiltros($request);
-        $productos = collect();
+        // Sin filtros, entra con la primera categoría seleccionada.
+        if (! $request->hasAny(['buscar', 'codigo', 'marca'])) {
+            $primera = Marca::where('active', true)->orderBy('orden')->first();
 
-        if ($hayFiltros) {
-            $productos = $this->filtrarProductos($request)
-                ->orderBy('orden')
-                ->paginate(12)
-                ->withQueryString();
+            if ($primera) {
+                return $this->categoria($request, $primera->id);
+            }
         }
 
-        return view('content.web.productos', compact('marcas', 'productos_ban', 'productos', 'hayFiltros'));
+        $marcas = $this->marcasConProductos();
+        $productos = $this->filtrarProductos($request)
+            ->orderBy('orden')
+            ->paginate(12)
+            ->withQueryString();
+        $dolar = Cotizacion::dolar();
+
+        return view('content.web.productos', compact('marcas', 'productos', 'dolar'));
     }
 
     public function webProductos(Request $request)
@@ -36,23 +40,24 @@ class ProductoBusquedaController extends Controller
             ->values()
             ->all();
 
-        $marcas = $this->marcas();
+        $marcas = $this->marcasConProductos();
         $productos = $this->filtrarProductos($request)
             ->orderBy('orden')
             ->paginate(10)
             ->withQueryString();
 
-        return view('content.web.webproductos', compact('productos', 'descuentos', 'marcas'));
+        $dolar = Cotizacion::dolar();
+
+        return view('content.web.webproductos', compact('productos', 'descuentos', 'marcas', 'dolar'));
     }
 
     public function categoria(Request $request, $id)
     {
-        $productos_ban = Banner::seccion('productos');
         $marca = Marca::findOrFail($id);
-        $marcas = $this->marcas();
+        $marcas = $this->marcasConProductos();
         $buscar = trim((string) $request->get('buscar', ''));
 
-        $productos = Producto::where('marca_id', $marca->id)
+        $productos = Producto::with('marca')->where('marca_id', $marca->id)
             ->where('active', true)
             ->when($buscar !== '', function ($query) use ($buscar) {
                 $query->where(function ($sub) use ($buscar) {
@@ -61,9 +66,20 @@ class ProductoBusquedaController extends Controller
                 });
             })
             ->orderBy('orden')
-            ->get();
+            ->paginate(12)
+            ->withQueryString();
+        $dolar = Cotizacion::dolar();
 
-        return view('content.web.productos-categoria', compact('productos', 'marca', 'marcas', 'productos_ban', 'buscar'));
+        return view('content.web.productos-categoria', compact('productos', 'marca', 'marcas', 'buscar', 'dolar'));
+    }
+
+    // Categorías con sus productos activos (solo lo necesario para el desplegable del listado).
+    private function marcasConProductos()
+    {
+        return Marca::where('active', true)
+            ->with(['productos' => fn ($q) => $q->select('id', 'marca_id', 'nombre')->where('active', true)->orderBy('orden')])
+            ->orderBy('orden')
+            ->get();
     }
 
     private function marcas()
@@ -71,13 +87,6 @@ class ProductoBusquedaController extends Controller
         return Marca::where('active', true)
             ->orderBy('orden')
             ->get();
-    }
-
-    private function hayFiltros(Request $request): bool
-    {
-        return $request->filled('buscar')
-            || $request->filled('codigo')
-            || $request->filled('marca');
     }
 
     private function filtrarProductos(Request $request)

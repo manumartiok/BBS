@@ -27,8 +27,8 @@ class HomeBannerController extends Controller
 
         $home_banners = new HomeBanner();
         $home_banners->orden = $request->orden;
-        $home_banners->titulo = $request->titulo;
-        $home_banners->texto = $request->texto;
+        // $home_banners->titulo = $request->titulo;
+        // $home_banners->texto = $request->texto;
 
         // Manejo de foto o video
         if ($request->hasFile('foto')) {
@@ -65,8 +65,8 @@ class HomeBannerController extends Controller
 
         $home_banners = HomeBanner::find($request->home_banners_id) ?? new HomeBanner();
         $home_banners->orden = $request->orden;
-        $home_banners->titulo = $request->titulo;
-        $home_banners->texto = $request->texto;
+        // $home_banners->titulo = $request->titulo;
+        // $home_banners->texto = $request->texto;
 
         // Manejo de foto o video
         if ($request->hasFile('foto')) {

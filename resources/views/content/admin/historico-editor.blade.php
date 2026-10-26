@@ -61,10 +61,22 @@
                         name="estado"
                         class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                        <option value="en_preparacion" @selected(old('estado', $pedido->estado) === 'en_preparacion')>En preparacion</option>
-                        <option value="entregado" @selected(old('estado', $pedido->estado) === 'entregado')>Entregado</option>
-                        <option value="cancelado" @selected(old('estado', $pedido->estado) === 'cancelado')>Cancelado</option>
+                        @foreach(\App\Models\Pedido::ESTADOS as $valor => [$texto])
+                            <option value="{{ $valor }}" @selected(old('estado', $pedido->estado) === $valor)>{{ $texto }}</option>
+                        @endforeach
                     </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-gray-700 font-medium mb-2" for="guia_transporte">N° guía de transporte</label>
+                    <input
+                        type="text"
+                        id="guia_transporte"
+                        name="guia_transporte"
+                        maxlength="100"
+                        value="{{ old('guia_transporte', $pedido->guia_transporte) }}"
+                        class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
                 </div>
             </div>
 

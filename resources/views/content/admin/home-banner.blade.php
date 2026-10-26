@@ -21,7 +21,7 @@
                 <tr class="text-gray-700 text-sm uppercase">
                 <th class="px-4 py-3 text-left">Orden</th>
                 <th class="px-4 py-3 text-left">Foto banner</th>
-                <th class="px-4 py-3 text-left">Titulo</th>
+                {{-- <th class="px-4 py-3 text-left">Titulo</th> --}}
                 <th class="px-4 py-3 text-center">Activo</th>
                 <th class="px-4 py-3 text-center">Acciones</th>
                 </tr>
@@ -45,7 +45,7 @@
                             </div>
                         @endif
                 </td>
-                <td class="px-4 py-3">{{$banner->titulo}}</td>
+                {{-- <td class="px-4 py-3">{{$banner->titulo}}</td> --}}
                 <td class="px-4 py-3 text-center">
                     @if ($banner->active)
                         <a href="{{ route('adm.home-ban-switch', $banner->id) }}" class="badge bg-green-400 text-white px-4 py-2 rounded">

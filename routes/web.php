@@ -19,6 +19,13 @@ use App\Http\Controllers\ContactoController;
 use App\Http\Controllers\WebUsuarioController;
 use App\Http\Controllers\ListaController;
 use App\Http\Controllers\PedidoController;
+use App\Http\Controllers\PresupuestoController;
+use App\Http\Controllers\CanjePuntosController;
+use App\Http\Controllers\CanjeAdminController;
+use App\Http\Controllers\UsuarioPublicoAdminController;
+use App\Http\Controllers\PedidoPublicoAdminController;
+use App\Http\Controllers\AccesoPublicoController;
+use App\Http\Controllers\CarritoPublicoController;
 use App\Http\Controllers\InfoController;
 use App\Http\Controllers\InfoPagoController;
 use App\Models\Marca;
@@ -32,6 +39,7 @@ use App\Http\Controllers\RedController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\MetadatoController;
 use App\Http\Controllers\FormController;
+use App\Http\Controllers\ContabiliumApiController;
 
 //ADMIN
 Route::middleware(AdminAuth::class)->group(function () {
@@ -83,9 +91,15 @@ Route::middleware(AdminAuth::class)->group(function () {
     Route::get('/admin/producto/destroy/{producto_id}', [ProductoController::class, 'destroy'])->name('adm.producto-destroy');
     Route::get('/admin/producto/switch/{producto_id}', [ProductoController::class, 'switch'])->name('adm.producto-switch');
     Route::get('/admin/producto/destacado/{producto_id}', [ProductoController::class, 'destacado'])->name('adm.producto-destacado');
-    Route::get('/admin/producto/delete-archivo/{producto_id}', [ProductoController::class, 'deleteArchivo'])->name('adm.producto-delete-archivo');
+    Route::get('/admin/producto/oferta/{producto_id}', [ProductoController::class, 'oferta'])->name('adm.producto-oferta');
+    Route::get('/admin/producto/mas-vendido/{producto_id}', [ProductoController::class, 'masVendido'])->name('adm.producto-mas-vendido');
+    Route::get('/admin/producto/descubre-mas/{producto_id}', [ProductoController::class, 'descubreMas'])->name('adm.producto-descubre-mas');
     Route::post('/admin/producto/import', [ProductoController::class, 'import'])->name('adm.producto-import');
     Route::post('/admin/producto/fotos-masivas', [ProductoController::class, 'fotosMasivas'])->name('adm.producto-fotos-masivas');
+    Route::post('/admin/producto/fotos/store', [ProductoController::class, 'fotosStore'])->name('adm.producto-fotos-store');
+    Route::post('/admin/producto/fotos/reordenar', [ProductoController::class, 'fotosReordenar'])->name('adm.producto-fotos-reordenar');
+    Route::get('/admin/producto/fotos/destroy/{foto_id}', [ProductoController::class, 'fotosDestroy'])->name('adm.producto-fotos-destroy');
+    Route::get('/admin/producto/fotos/switch/{foto_id}', [ProductoController::class, 'fotosSwitch'])->name('adm.producto-fotos-switch');
     Route::post('/admin/producto/reordenar', [ProductoController::class, 'reordenar'])->name('adm.producto-reordenar');
 
     //novedades
@@ -154,6 +168,27 @@ Route::middleware(AdminAuth::class)->group(function () {
     Route::get('/admin/pedidos/destroy/{pedido}', [PedidoController::class, 'adminDestroy'])->name('adm.pedidos-historico-destroy');
     Route::get('/admin/pedidos/switch/{pedido}', [PedidoController::class, 'adminSwitch'])->name('adm.pedidos-historico-switch');
 
+    //historico de presupuestos
+    Route::get('/admin/presupuestos', [PresupuestoController::class, 'adminIndex'])->name('adm.presupuestos-historico');
+    Route::get('/admin/presupuestos/editor/{presupuesto}', [PresupuestoController::class, 'adminShow'])->name('adm.presupuestos-historico-editor');
+    Route::post('/admin/presupuestos/update', [PresupuestoController::class, 'adminUpdate'])->name('adm.presupuestos-historico-update');
+    Route::get('/admin/presupuestos/destroy/{presupuesto}', [PresupuestoController::class, 'adminDestroy'])->name('adm.presupuestos-historico-destroy');
+
+    //historico de canjes
+    Route::get('/admin/canjes', [CanjeAdminController::class, 'index'])->name('adm.canjes-historico');
+    Route::get('/admin/canjes/editor/{canje}', [CanjeAdminController::class, 'show'])->name('adm.canjes-historico-editor');
+    Route::post('/admin/canjes/update', [CanjeAdminController::class, 'update'])->name('adm.canjes-historico-update');
+    Route::get('/admin/canjes/destroy/{canje}', [CanjeAdminController::class, 'destroy'])->name('adm.canjes-historico-destroy');
+    Route::get('/admin/canjes/switch/{canje}', [CanjeAdminController::class, 'switch'])->name('adm.canjes-historico-switch');
+
+    //zona publica: usuarios registrados e historico de pedidos
+    Route::get('/admin/usuarios-publicos', [UsuarioPublicoAdminController::class, 'index'])->name('adm.usuarios-publicos');
+    Route::get('/admin/pedidos-publicos', [PedidoPublicoAdminController::class, 'index'])->name('adm.pedidos-publicos');
+    Route::get('/admin/pedidos-publicos/editor/{pedido}', [PedidoPublicoAdminController::class, 'show'])->name('adm.pedidos-publicos-editor');
+    Route::post('/admin/pedidos-publicos/update', [PedidoPublicoAdminController::class, 'update'])->name('adm.pedidos-publicos-update');
+    Route::get('/admin/pedidos-publicos/destroy/{pedido}', [PedidoPublicoAdminController::class, 'destroy'])->name('adm.pedidos-publicos-destroy');
+    Route::get('/admin/pedidos-publicos/switch/{pedido}', [PedidoPublicoAdminController::class, 'switch'])->name('adm.pedidos-publicos-switch');
+
     //metadatos
     Route::get('/admin/metadatos', [MetadatoController::class,'index'])->name('adm.metadatos');
     Route::get('/admin/metadatos/creador', [MetadatoController::class,'create'])->name('adm.metadatos-creador');
@@ -166,10 +201,17 @@ Route::middleware(AdminAuth::class)->group(function () {
     Route::get('/admin/banner/{seccion}', [BannerController::class, 'show'])->name('adm.banner');
     Route::post('/admin/banner/{seccion}', [BannerController::class, 'update'])->name('adm.banner-update');
 
+    
+
     //módulos generados con php artisan make:modulo
     require __DIR__.'/modulos.php';
 });
 
+//contabilium (datos de la API en JSON)
+    Route::get('/api', [ContabiliumApiController::class, 'cuentasCorrientes'])->name('adm.api');
+    Route::get('/api/clientes', [ContabiliumApiController::class, 'clientes'])->name('adm.api-clientes');
+    Route::get('/api/productos', [ContabiliumApiController::class, 'productos'])->name('adm.api-productos');
+    
 //idioma
 Route::get('/idioma/{idioma}', function ($idioma) {
     if (in_array($idioma, \App\Support\Idiomas::todos())) {
@@ -205,6 +247,7 @@ Route::middleware('web.usuario.auth')->group(function () {
     Route::post('/web/carrito/eliminar', [PedidoController::class, 'eliminar'])->name('web-carrito.eliminar');
     Route::post('/web/carrito/vaciar', [PedidoController::class, 'vaciar'])->name('web-carrito.vaciar');
     Route::post('/web/carrito/completar', [PedidoController::class, 'completar'])->name('web-carrito.completar');
+    Route::post('/web/carrito/presupuesto', [PresupuestoController::class, 'store'])->name('web-carrito.presupuesto');
 
     Route::get('/clientes/informacion-pago', function () {
         return view('content.web.webinfo');})->name('web-info');
@@ -215,6 +258,21 @@ Route::middleware('web.usuario.auth')->group(function () {
     Route::get('/clientes/pedidos', [PedidoController::class, 'historico'])->name('web-pedidos');
     Route::get('/clientes/pedidos/{pedido}/pdf', [PedidoController::class, 'pdf'])->name('web-pedidos.pdf');
     Route::post('/clientes/pedidos/{pedido}/recomprar', [PedidoController::class, 'recomprar'])->name('web-pedidos.recomprar');
+
+    Route::get('/clientes/canje-puntos', [CanjePuntosController::class, 'index'])->name('web-canje');
+    Route::get('/clientes/canje-puntos/carrito', [CanjePuntosController::class, 'carrito'])->name('web-canje.carrito');
+    Route::post('/clientes/canje-puntos/carrito/agregar', [CanjePuntosController::class, 'agregar'])->name('web-canje.agregar');
+    Route::post('/clientes/canje-puntos/carrito/quitar', [CanjePuntosController::class, 'quitar'])->name('web-canje.quitar');
+    Route::post('/clientes/canje-puntos/envio', [CanjePuntosController::class, 'guardarEnvio'])->name('web-canje.envio');
+    Route::get('/clientes/canje-puntos/detalle', [CanjePuntosController::class, 'detalle'])->name('web-canje.detalle');
+    Route::get('/clientes/canje-puntos/movimientos', [CanjePuntosController::class, 'movimientos'])->name('web-canje.movimientos');
+    Route::get('/clientes/canje-puntos/movimientos/{canje}/ver', [CanjePuntosController::class, 'ver'])->name('web-canje.ver');
+    Route::post('/clientes/canje-puntos/realizar', [CanjePuntosController::class, 'realizar'])->name('web-canje.realizar');
+
+    Route::get('/clientes/presupuestos', [PresupuestoController::class, 'index'])->name('web-presupuestos');
+    Route::get('/clientes/presupuestos/{presupuesto}/ver', [PresupuestoController::class, 'ver'])->name('web-presupuestos.ver');
+    Route::get('/clientes/presupuestos/{presupuesto}/pdf', [PresupuestoController::class, 'descargar'])->name('web-presupuestos.pdf');
+    Route::post('/clientes/presupuestos/{presupuesto}/pedido', [PresupuestoController::class, 'pasarAPedido'])->name('web-presupuestos.pedido');
 
     Route::get('/clientes/lista', function () {
         return view('content.web.weblista');
@@ -228,6 +286,32 @@ Route::post('/admin/newsletter/store', [NewsletterController::class,'store'])->n
 Route::get('/', function () {
     return view('content.web.home');})->name('home');
 
+Route::get('/acceso', [AccesoPublicoController::class, 'show'])->name('web-acceso');
+Route::post('/acceso/registro', [AccesoPublicoController::class, 'registro'])->name('acceso.registro');
+Route::post('/acceso/login', [AccesoPublicoController::class, 'login'])->middleware('throttle:6,1')->name('acceso.login');
+Route::post('/acceso/logout', [AccesoPublicoController::class, 'logout'])->name('acceso.logout');
+
+// proceso de compra de los usuarios públicos
+Route::middleware('usuario.publico.auth')->group(function () {
+    Route::get('/compra/carrito', function () {
+        return view('content.web.compra-carrito');
+    })->name('compra.carrito');
+    Route::get('/compra/envio', [CarritoPublicoController::class, 'pasoEnvio'])->name('compra.envio');
+    Route::post('/compra/envio', [CarritoPublicoController::class, 'guardarEnvio'])->name('compra.envio.guardar');
+    Route::get('/compra/pago', [CarritoPublicoController::class, 'pasoPago'])->name('compra.pago');
+    Route::post('/compra/pago', [CarritoPublicoController::class, 'guardarPago'])->name('compra.pago.guardar');
+    Route::get('/compra/finalizar', [CarritoPublicoController::class, 'pasoFinal'])->name('compra.finalizar');
+    Route::post('/compra/finalizar', [CarritoPublicoController::class, 'realizarPedido'])->name('compra.realizar');
+});
+
+// carrito de los usuarios públicos
+Route::middleware('usuario.publico.auth')->prefix('carrito-publico')->group(function () {
+    Route::get('/', [CarritoPublicoController::class, 'index'])->name('carrito-publico');
+    Route::post('/agregar', [CarritoPublicoController::class, 'agregar'])->name('carrito-publico.agregar');
+    Route::post('/actualizar', [CarritoPublicoController::class, 'actualizar'])->name('carrito-publico.actualizar');
+    Route::post('/eliminar', [CarritoPublicoController::class, 'eliminar'])->name('carrito-publico.eliminar');
+});
+
 Route::get('/nosotros', function () {
     return view('content.web.nosotros');})->name('nosotros');
 
@@ -238,22 +322,24 @@ Route::get('/productos/marca/{id}', [ProductoBusquedaController::class, 'categor
 // Producto detalle
 Route::get('/productos/detalle/{id}', function ($id) {
     $producto = Producto::with('marca', 'fotos')->findOrFail($id);
-    $marcas = Marca::where('active', true)->orderBy('orden')->get();
-    $productos_ban = Banner::seccion('productos');
-    $related = Producto::where('marca_id', $producto->marca_id)
+    $related = Producto::with('marca')->where('marca_id', $producto->marca_id)
         ->where('active', true)
         ->where('id', '!=', $producto->id)
         ->orderBy('orden')
         ->limit(3)
         ->get();
 
-    return view('content.web.productos-detalle', compact('producto', 'marcas', 'productos_ban', 'related'));
+    return view('content.web.productos-detalle', compact('producto', 'related'));
 })->name('productos.detalle');
 
 Route::get('/novedades', function () {
     return view('content.web.novedade');})->name('novedades');
 
 Route::get('/novedades/detalle/{id}', [NovedadeController::class, 'detalle'])->name('novedades-detalle');
+
+Route::get('/catalogo', function () {
+    return view('content.web.catalogo');
+})->name('catalogo');
 
 Route::get('/contacto', function () {
     return view('content.web.contacto');})->name('contacto'); 
