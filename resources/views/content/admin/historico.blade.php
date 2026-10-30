@@ -16,6 +16,20 @@
         </div>
     @endif
 
+    @error('retiro_local_texto')
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{{ $message }}</div>
+    @enderror
+
+    {{-- Texto que ven los clientes debajo de "Retiro en local" (carrito público y privado) --}}
+    <form method="POST" action="{{ route('adm.pedidos-retiro-local') }}" class="mb-4 border rounded-2xl bg-white shadow px-6 py-4">
+        @csrf
+        <label for="retiro_local_texto" class="block text-gray-700 font-medium mb-1">Texto de "Retiro en local"</label>
+        <p class="text-xs text-gray-400 mb-2">Se muestra debajo de la opción de retiro en el local en el carrito (horarios, dirección, teléfono, email). Si lo dejás vacío se usa el texto por defecto.</p>
+        <textarea id="retiro_local_texto" name="retiro_local_texto" rows="4" maxlength="1000"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">{{ old('retiro_local_texto', $retiroLocal) }}</textarea>
+        <button type="submit" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1.5 rounded-lg transition">Guardar texto</button>
+    </form>
+
     <div class="overflow-x-auto rounded-2xl shadow">
         <div class="flex items-center px-6 py-3 border rounded gap-4 bg-white">
             <form method="GET" action="{{ route('adm.pedidos-historico') }}" class="flex items-center gap-2 flex-1">
@@ -76,7 +90,12 @@
                         <td class="px-4 py-3">{{ $pedido->created_at?->format('d/m/Y') }}</td>
                         <td class="px-4 py-3">{{ $pedido->fecha_entrega?->format('d/m/Y') ?: 'Sin definir' }}</td>
                         <td class="px-4 py-3">{{ $pedido->items->count() }}</td>
-                        <td class="px-4 py-3 font-semibold">$ {{ number_format($pedido->total, 2, ',', '.') }}</td>
+                        <td class="px-4 py-3 font-semibold">
+                            $ {{ number_format($pedido->total, 2, ',', '.') }}
+                            @if($pedido->pago_estado)
+                                <span class="block w-fit mt-1 {{ $pedido->pago_estado_badge }} text-white text-xs font-normal px-2 py-1 rounded">{{ $pedido->pago_estado_texto }}</span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3 text-center">
                             <a href="{{ route('adm.pedidos-historico-switch', $pedido) }}"
                                class="badge {{ $estadoClass }} text-white px-4 py-2 rounded hover:opacity-90 transition">

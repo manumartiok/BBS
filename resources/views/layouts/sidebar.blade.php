@@ -4,7 +4,7 @@
 <aside id="sidebar" class="w-64 bg-gray-800 text-white min-h-screen p-4 sidebar-transition overflow-hidden">
   <div>
     <div class="flex flex-col items-center mb-4">
-     <a href="{{route('adm.dashboard')}}"><img src="" alt="Logo" class="h-[40px] mb-[10px]"></a> 
+     <a href="{{route('adm.dashboard')}}"><img src="{{ asset('assets/img/gazpetrol.png')}}" alt="Logo" class="h-[40px] mb-[10px]"></a> 
       <h2 class="text-xl font-bold ml-2">Administrador</h2>
     </div>
   </div>
@@ -83,7 +83,8 @@
          <li><a href="{{route('adm.web-usuarios')}}" class="block py-1 px-2 hover:bg-gray-600 rounded">Usuarios</a></li>
           {{-- <li><a href="{{route('adm.carrito')}}" class="block py-1 px-2 hover:bg-gray-600 rounded">Carrito</a></li> --}}
           <li><a href="{{route('adm.info')}}" class="block py-1 px-2 hover:bg-gray-600 rounded">Info. de pagos</a></li>
-         <li><a href="{{route('adm.lista')}}" class="block py-1 px-2 hover:bg-gray-600 rounded">Lista de precios</a></li>
+         {{-- <li><a href="{{route('adm.lista')}}" class="block py-1 px-2 hover:bg-gray-600 rounded">Lista de precios</a></li> --}}
+         <li><a href="{{route('adm.cuentas-corrientes')}}" class="block py-1 px-2 hover:bg-gray-600 rounded">Cuentas corrientes</a></li>
          <li><a href="{{route('adm.pedidos-historico')}}" class="block py-1 px-2 hover:bg-gray-600 rounded">Histórico de pedidos</a></li>
          <li><a href="{{route('adm.presupuestos-historico')}}" class="block py-1 px-2 hover:bg-gray-600 rounded">Histórico de presupuestos</a></li>
          <li><a href="{{route('adm.canjes-historico')}}" class="block py-1 px-2 hover:bg-gray-600 rounded">Histórico de canjes</a></li>

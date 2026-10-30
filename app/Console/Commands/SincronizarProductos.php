@@ -47,7 +47,7 @@ class SincronizarProductos extends Command
 
             foreach ($items as $item) {
                 $codigo = trim((string) ($item['Codigo'] ?? ''));
-                $precio = $item['PrecioFinal'] ?? 0;
+                $precio = $item['Precio'] ?? 0;
 
                 if ($codigo === '') {
                     $omitidos[] = ['-', $item['Nombre'] ?? '', 'Sin código'];
@@ -79,6 +79,7 @@ class SincronizarProductos extends Command
                 $producto->nombre = $item['Nombre'] ?? '';
                 $producto->stock_fisico = $item['Stock'] ?? 0;
                 $producto->precio = $precio;
+                $producto->iva = $item['Iva'] ?? null;
                 $producto->active = true;
                 $producto->save();
             }

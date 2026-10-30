@@ -73,7 +73,12 @@
             <tr style="color:#007E22;"><td>Descuento cliente:</td><td style="text-align:right;">-$ {{ number_format($totales['descuento_items'], 2, ',', '.') }}</td></tr>
         @endif
         <tr><td>Subtotal:</td><td style="text-align:right;">$ {{ number_format($presupuesto->subtotal, 2, ',', '.') }}</td></tr>
-        <tr><td>IVA (21%):</td><td style="text-align:right;">$ {{ number_format($presupuesto->iva, 2, ',', '.') }}</td></tr>
+        @if(isset($totales['iva_21']))
+            <tr><td>IVA (10,5%):</td><td style="text-align:right;">$ {{ number_format($totales['iva_105'] ?? 0, 2, ',', '.') }}</td></tr>
+            <tr><td>IVA (21%):</td><td style="text-align:right;">$ {{ number_format($totales['iva_21'], 2, ',', '.') }}</td></tr>
+        @else
+            <tr><td>IVA (21%):</td><td style="text-align:right;">$ {{ number_format($presupuesto->iva, 2, ',', '.') }}</td></tr>
+        @endif
         <tr class="total-final"><td>TOTAL:</td><td style="text-align:right;">$ {{ number_format($presupuesto->total, 2, ',', '.') }}</td></tr>
     </table>
 </div>

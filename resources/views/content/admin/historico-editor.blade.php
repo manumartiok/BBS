@@ -38,6 +38,19 @@
             </div>
         @endif
 
+        @if($pedido->pago_estado)
+            <div class="border rounded p-4 mb-4 text-sm text-gray-600">
+                <span class="text-xs text-gray-400 uppercase">Pago con Mercado Pago</span>
+                <p class="mt-1">
+                    <span class="{{ $pedido->pago_estado_badge }} text-white text-xs px-2 py-1 rounded">{{ $pedido->pago_estado_texto }}</span>
+                    @if($pedido->pagado_at) el {{ $pedido->pagado_at->format('d/m/Y H:i') }} @endif
+                </p>
+                @if($pedido->mp_payment_id)
+                    <p class="text-xs text-gray-400 mt-1">Pago de Mercado Pago #{{ $pedido->mp_payment_id }} ({{ $pedido->mp_status_detail }})</p>
+                @endif
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('adm.pedidos-historico-update') }}">
             @csrf
             <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
@@ -80,15 +93,27 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            @php($desgloseIva = isset($pedido->totales['iva_21']))
+            <div class="grid grid-cols-1 {{ $desgloseIva ? 'md:grid-cols-4' : 'md:grid-cols-3' }} gap-4 mt-6">
                 <div class="border rounded p-4">
                     <span class="text-xs text-gray-400 uppercase">Subtotal</span>
                     <p class="text-lg font-semibold">$ {{ number_format($pedido->subtotal, 2, ',', '.') }}</p>
                 </div>
-                <div class="border rounded p-4">
-                    <span class="text-xs text-gray-400 uppercase">IVA</span>
-                    <p class="text-lg font-semibold">$ {{ number_format($pedido->iva, 2, ',', '.') }}</p>
-                </div>
+                @if($desgloseIva)
+                    <div class="border rounded p-4">
+                        <span class="text-xs text-gray-400 uppercase">IVA 10,5%</span>
+                        <p class="text-lg font-semibold">$ {{ number_format($pedido->totales['iva_105'] ?? 0, 2, ',', '.') }}</p>
+                    </div>
+                    <div class="border rounded p-4">
+                        <span class="text-xs text-gray-400 uppercase">IVA 21%</span>
+                        <p class="text-lg font-semibold">$ {{ number_format($pedido->totales['iva_21'], 2, ',', '.') }}</p>
+                    </div>
+                @else
+                    <div class="border rounded p-4">
+                        <span class="text-xs text-gray-400 uppercase">IVA</span>
+                        <p class="text-lg font-semibold">$ {{ number_format($pedido->iva, 2, ',', '.') }}</p>
+                    </div>
+                @endif
                 <div class="border rounded p-4">
                     <span class="text-xs text-gray-400 uppercase">Total</span>
                     <p class="text-lg font-semibold">$ {{ number_format($pedido->total, 2, ',', '.') }}</p>

@@ -12,10 +12,12 @@
             class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow transition">
             <i class="fa-solid fa-images mr-1"></i> Fotos Masivas
         </button>
+        {{--
         <button onclick="document.getElementById('modalImport').classList.remove('hidden')"
             class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow transition">
             Importar CSV/Excel
         </button>
+        --}}
     </div>
 </div>
 <hr class="mx-6 mb-2">
@@ -152,6 +154,7 @@
                     <th class="px-4 py-3 text-left">Código</th>
                     <th class="px-4 py-3 text-left">Stock físico</th>
                     <th class="px-4 py-3 text-left">Precio</th>
+                    <th class="px-4 py-3 text-left">IVA</th>
                     <th class="px-4 py-3 text-center">Activo</th>
                     <th class="px-4 py-3 text-center">Destacado</th>
                     <th class="px-4 py-3 text-center">Oferta</th>
@@ -172,6 +175,7 @@
                         <td class="px-4 py-3">{{ $item->codigo }}</td>
                         <td class="px-4 py-3">{{ $item->stock_fisico }}</td>
                         <td class="px-4 py-3">{{ $item->precio }}</td>
+                        <td class="px-4 py-3">{{ $item->iva !== null ? rtrim(rtrim($item->iva, '0'), '.') . '%' : '' }}</td>
                         <td class="px-4 py-3 text-center">
                             @if ($item->active)
                                 <a href="{{ route('adm.producto-switch', $item->id) }}" class="badge bg-green-400 text-white px-4 py-2 rounded">Activo</a>

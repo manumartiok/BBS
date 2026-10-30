@@ -70,7 +70,12 @@
                             @endforeach
                         </td>
                         <td class="px-4 py-3">{{ \App\Models\PedidoPublico::ENVIOS[$pedido->envio] ?? $pedido->envio }}</td>
-                        <td class="px-4 py-3">{{ \App\Models\PedidoPublico::PAGOS[$pedido->forma_pago] ?? $pedido->forma_pago }}</td>
+                        <td class="px-4 py-3">
+                            {{ \App\Models\PedidoPublico::PAGOS[$pedido->forma_pago] ?? $pedido->forma_pago }}
+                            @if($pedido->pago_estado)
+                                <span class="block w-fit mt-1 {{ $pedido->pago_estado_badge }} text-white text-xs px-2 py-1 rounded">{{ $pedido->pago_estado_texto }}</span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3 text-right font-semibold">$ {{ number_format($pedido->total, 2, ',', '.') }}</td>
                         <td class="px-4 py-3 text-center">
                             <a href="{{ route('adm.pedidos-publicos-switch', $pedido) }}"

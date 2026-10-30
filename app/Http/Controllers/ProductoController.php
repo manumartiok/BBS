@@ -527,6 +527,7 @@ class ProductoController extends Controller
             'stock_fisico' => 'nullable|string|max:255',
             'stock_transito' => 'nullable|string|max:255',
             'precio' => 'nullable|numeric',
+            'iva' => 'nullable|numeric|min:0|max:100',
             'puntos' => 'nullable|integer|min:0',
             'puntos_compra' => 'nullable|integer|min:0',
         ]);
@@ -542,6 +543,7 @@ class ProductoController extends Controller
         $producto->stock_transito = $request->input('stock_transito');
         $producto->descripcion = $request->input('descripcion');
         $producto->precio = $request->filled('precio') ? $request->input('precio') : null;
+        $producto->iva = $request->filled('iva') ? $request->input('iva') : null;
         $producto->puntos = $request->filled('puntos') ? $request->input('puntos') : null;
         $producto->puntos_compra = $request->filled('puntos_compra') ? $request->input('puntos_compra') : null;
         $producto->caracteristicas = $this->procesarLista($request, 'caracteristicas', self::CARACTERISTICAS, $producto->caracteristicas, 'productos');

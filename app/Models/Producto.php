@@ -18,6 +18,7 @@ class Producto extends Model
         'stock_transito',
         'descripcion',
         'precio',
+        'iva',
         'puntos',
         'puntos_compra',
         'caracteristicas',
@@ -57,6 +58,13 @@ class Producto extends Model
         }
 
         return round($this->precio * $dolar, 2);
+    }
+
+    // Alícuota de IVA que se aplica en el carrito: 10,5% o 21%.
+    // Sin IVA cargado (o con otro valor) se usa 21%.
+    public function getAlicuotaIvaAttribute(): float
+    {
+        return abs((float) $this->iva - 10.5) < 0.01 ? 10.5 : 21.0;
     }
 
     public function marca()

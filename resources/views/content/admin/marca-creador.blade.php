@@ -25,7 +25,7 @@
 
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">
-                        Foto (recomendado 295x262) / (2MB máximo)
+                        Foto (recomendado 288x252) / (2MB máximo)
                     </label>
                     <input type="file" name="foto"
                            class="w-full border border-gray-300 rounded px-4 py-2">

@@ -51,7 +51,7 @@
             <input type="hidden" name="productos_id" value="{{ $producto->id }}">
 
             <div class="mb-4">
-                <label class="block text-gray-700 font-medium mb-2">Agregar fotos para la galería (510x400)</label>
+                <label class="block text-gray-700 font-medium mb-2">Agregar fotos para la galería (recomendado 500x500)</label>
                 <input type="file" name="fotos[]" id="fotos" multiple accept="image/*" class="w-full border border-gray-300 rounded px-4 py-2" />
                 <p class="text-sm text-gray-500 mt-1" id="file-count">No hay archivos seleccionados</p>
             </div>

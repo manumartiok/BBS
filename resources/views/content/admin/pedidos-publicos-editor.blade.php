@@ -68,6 +68,15 @@
                         @if($pedido->envio_codigo_postal) (CP {{ $pedido->envio_codigo_postal }}) @endif
                     </p>
                     <p>Pago: <strong>{{ \App\Models\PedidoPublico::PAGOS[$pedido->forma_pago] ?? $pedido->forma_pago }}</strong></p>
+                    @if($pedido->pago_estado)
+                        <p class="mt-1">
+                            <span class="{{ $pedido->pago_estado_badge }} text-white text-xs px-2 py-1 rounded">{{ $pedido->pago_estado_texto }}</span>
+                            @if($pedido->pagado_at) el {{ $pedido->pagado_at->format('d/m/Y H:i') }} @endif
+                        </p>
+                        @if($pedido->mp_payment_id)
+                            <p class="text-xs text-gray-400 mt-1">Pago de Mercado Pago #{{ $pedido->mp_payment_id }} ({{ $pedido->mp_status_detail }})</p>
+                        @endif
+                    @endif
                     @if($pedido->entrega_otra)
                         <p class="mt-1">Entregar en: {{ $pedido->entrega_otra['direccion'] ?? '' }}, {{ $pedido->entrega_otra['localidad'] ?? '' }}, {{ $pedido->entrega_otra['provincia'] ?? '' }} ({{ $pedido->entrega_otra['codigo_postal'] ?? '' }})</p>
                     @else
@@ -99,6 +108,20 @@
                                     <td class="px-3 py-2 text-right">$ {{ number_format($item->subtotal, 2, ',', '.') }}</td>
                                 </tr>
                             @endforeach
+                            @if(!is_null($pedido->iva_21))
+                                <tr class="border-t bg-gray-50">
+                                    <td class="px-3 py-2" colspan="4">Subtotal</td>
+                                    <td class="px-3 py-2 text-right">$ {{ number_format($pedido->subtotal, 2, ',', '.') }}</td>
+                                </tr>
+                                <tr class="border-t bg-gray-50">
+                                    <td class="px-3 py-2" colspan="4">IVA 10,5%</td>
+                                    <td class="px-3 py-2 text-right">$ {{ number_format($pedido->iva_105, 2, ',', '.') }}</td>
+                                </tr>
+                                <tr class="border-t bg-gray-50">
+                                    <td class="px-3 py-2" colspan="4">IVA 21%</td>
+                                    <td class="px-3 py-2 text-right">$ {{ number_format($pedido->iva_21, 2, ',', '.') }}</td>
+                                </tr>
+                            @endif
                             <tr class="border-t bg-gray-50 font-semibold">
                                 <td class="px-3 py-2" colspan="4">Total</td>
                                 <td class="px-3 py-2 text-right">$ {{ number_format($pedido->total, 2, ',', '.') }}</td>

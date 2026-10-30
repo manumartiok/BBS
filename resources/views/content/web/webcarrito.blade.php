@@ -28,8 +28,20 @@
     });
     $subtotalConDescuento = $subtotalSinDescuento * $factorDescuento;
     $descuentoPorItems = $subtotalSinDescuento - $subtotalConDescuento;
-    $iva = $subtotalConDescuento * 0.21;
-    $total = $subtotalConDescuento + $iva;
+
+    // IVA según la alícuota de cada producto (10,5% o 21%)
+    $iva105 = 0;
+    $iva21 = 0;
+    foreach ($productosCarrito as $it) {
+        $precio = (float) ($it['precio_base'] ?? ($it['producto']->precio_pesos ?? 0));
+        $baseItem = $precio * $factorDescuento * (int) ($it['cantidad'] ?? 1);
+        if ($it['producto']->alicuota_iva === 10.5) {
+            $iva105 += $baseItem * 0.105;
+        } else {
+            $iva21 += $baseItem * 0.21;
+        }
+    }
+    $total = $subtotalConDescuento + $iva105 + $iva21;
 
     $entregas = ['mercado_flex' => 'Mercado Flex', 'transporte_terminal' => 'Transporte a la terminal', 'retiro_local' => 'Retiro en local (ver mapa)'];
     $formasPago = ['mercado_pago' => 'Mercado Pago', 'transferencia' => 'Transferencia bancaria', 'efectivo' => 'Efectivo (únicamente en local)'];
@@ -111,7 +123,8 @@
                                     <span class="cant-item flex items-center justify-center font-medium"
                                           data-key="{{ $producto->id }}"
                                           data-precio-original="{{ $precio }}"
-                                          data-precio-con-desc="{{ $precioConDesc }}">{{ $cantidad }}</span>
+                                          data-precio-con-desc="{{ $precioConDesc }}"
+                                          data-alicuota-iva="{{ $producto->alicuota_iva }}">{{ $cantidad }}</span>
                                     <button type="button" class="cantidad-mas flex items-center justify-center" aria-label="Agregar uno">
                                         <img src="{{ asset('assets/img/productos/mas.svg') }}" alt="" class="w-[11px] h-[11px] max-w-none">
                                     </button>
@@ -190,6 +203,9 @@
                                 <img src="{{ asset('assets/img/productos/radio-activo.svg') }}" alt="" class="w-[20px] h-[20px] max-w-none hidden peer-checked:block">
                                 <span>{{ $texto }}</span>
                             </label>
+                            @if($valor === 'retiro_local')
+                                <div class="-mt-[8px] ml-[41px] text-[13px] leading-[22px] text-[#222] whitespace-pre-line">{{ \App\Models\Contacto::textoRetiroLocal() }}</div>
+                            @endif
                         @endforeach
                     </div>
                 </section>
@@ -227,8 +243,12 @@
                         </div>
                         <img src="{{ asset('assets/img/productos/resumen-linea.svg') }}" alt="" class="block w-full h-[1px] max-w-none my-[7px]">
                         <div class="flex justify-between">
+                            <span>IVA 10,5%</span>
+                            <span id="panel-iva-105">{{ $pesos($iva105) }}</span>
+                        </div>
+                        <div class="flex justify-between">
                             <span>IVA 21%</span>
-                            <span id="panel-iva">{{ $pesos($iva) }}</span>
+                            <span id="panel-iva-21">{{ $pesos($iva21) }}</span>
                         </div>
                         <div class="flex justify-between items-baseline mt-[1px]">
                             <span class="text-[24px] leading-[29px] font-semibold">Total <span class="text-[15px]">(IVA incluido)</span></span>
@@ -292,6 +312,8 @@
         function actualizarSubtotales() {
             let subtotalSinDesc = 0;
             let subtotalConDesc = 0;
+            let iva105 = 0;
+            let iva21 = 0;
             let filas = 0;
 
             document.querySelectorAll('#tbody-carrito .cant-item').forEach(el => {
@@ -302,17 +324,22 @@
                 el.closest('tr').querySelector('.precio-con-desc-carrito').textContent = formatPesos(precioConDesc * cantidad);
                 subtotalSinDesc += precio * cantidad;
                 subtotalConDesc += precioConDesc * cantidad;
+                if (parseFloat(el.dataset.alicuotaIva) === 10.5) {
+                    iva105 += precioConDesc * cantidad * 0.105;
+                } else {
+                    iva21 += precioConDesc * cantidad * 0.21;
+                }
                 filas++;
             });
 
-            const iva = subtotalConDesc * 0.21;
             const set = (id, valor) => { const el = document.getElementById(id); if (el) el.textContent = formatPesos(valor); };
 
             set('panel-subtotal-sin-desc', subtotalSinDesc);
             set('panel-descuento-items', subtotalSinDesc - subtotalConDesc);
             set('panel-subtotal', subtotalConDesc);
-            set('panel-iva', iva);
-            set('panel-total', subtotalConDesc + iva);
+            set('panel-iva-105', iva105);
+            set('panel-iva-21', iva21);
+            set('panel-total', subtotalConDesc + iva105 + iva21);
             actualizarGlobo(filas);
         }
 
@@ -460,6 +487,11 @@
             })
             .then(r => r.json())
             .then(data => {
+                // Mercado Pago: el pedido queda registrado y se sigue en la pantalla de pago
+                if (data.success && data.redirect) {
+                    window.location.href = data.redirect;
+                    return;
+                }
                 if (data.success) {
                     const puntosGanados = parseInt(data.puntos_ganados, 10) || 0;
                     const misPuntos = document.getElementById('mis-puntos');

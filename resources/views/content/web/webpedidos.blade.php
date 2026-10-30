@@ -56,7 +56,15 @@
                                 @endif
                             </td>
                             <td class="text-right">{{ $importe }}</td>
-                            <td class="pl-[60px]" style="color: {{ $pedido->estado_color }}">{{ $pedido->estado_texto }}</td>
+                            <td class="pl-[60px]">
+                                <span style="color: {{ $pedido->estado_color }}">{{ $pedido->estado_texto }}</span>
+                                @if($pedido->pago_estado)
+                                    <span class="block text-[13px] leading-[18px] {{ $pedido->pago_estado === 'aprobado' ? 'text-[#00920A]' : 'text-[#808080]' }}">{{ $pedido->pago_estado_texto }}</span>
+                                    @if($pedido->puede_pagar_mercado_pago)
+                                        <a href="{{ route('web-pedidos.mp.pagar', $pedido) }}" class="text-[13px] leading-[18px] font-semibold underline">Pagar</a>
+                                    @endif
+                                @endif
+                            </td>
                             <td>
                                 <a href="{{ route('web-pedidos.pdf', $pedido) }}" target="_blank" rel="noopener"
                                    class="inline-flex items-center justify-center p-[16px] border border-black rounded-[22px] font-semibold uppercase whitespace-nowrap leading-none hover:bg-black hover:text-white transition">
@@ -104,5 +112,9 @@ document.querySelectorAll('.btn-copiar-guia').forEach(btn => {
         }
     });
 });
+
+@if(session('pedido_ok'))
+    Swal.fire({ icon: 'success', title: 'Pedido realizado', text: @json(session('pedido_ok')), confirmButtonColor: '#0D1A35' });
+@endif
 </script>
 @endsection

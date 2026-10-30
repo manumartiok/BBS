@@ -29,16 +29,16 @@
                 {{-- Foto --}}
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">
-                        Foto (recomendado 295x262) / (2MB máximo)
+                        Foto (recomendado 288x252) / (2MB máximo)
                     </label>
 
                     @if (!empty($marca->foto))
                         <img :src="foto.foto || '{{ $marca->foto }}'"
-                             class="mb-3 w-full max-w-[295px] h-[262px] object-cover rounded">
+                             class="mb-3 w-full max-w-[288px] h-[252px] object-cover rounded">
                     @else
                         <img :src="foto.foto || ''"
                              v-if="foto.foto"
-                             class="mb-3 w-full max-w-[295px] h-[262px] object-cover rounded">
+                             class="mb-3 w-full max-w-[288px] h-[252px] object-cover rounded">
                     @endif
 
                     <input type="file" name="foto" @change="subirFoto"

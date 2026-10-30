@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\TienePagoMercadoPago;
 use Illuminate\Database\Eloquent\Model;
 
 class Pedido extends Model
 {
+    use TienePagoMercadoPago;
+
     // Estados del pedido, en orden de avance: clave => [texto, color del texto en la web, color del badge en admin]
     public const ESTADOS = [
         'pendiente' => ['Pendiente', '#FF0000', 'bg-red-500'],
@@ -20,6 +23,11 @@ class Pedido extends Model
         'estado',
         'entrega',
         'forma_pago',
+        'pago_estado',
+        'mp_preference_id',
+        'mp_payment_id',
+        'mp_status_detail',
+        'pagado_at',
         'mensaje',
         'fecha_entrega',
         'guia_transporte',
@@ -36,6 +44,7 @@ class Pedido extends Model
         'total' => 'float',
         'totales' => 'array',
         'fecha_entrega' => 'date',
+        'pagado_at' => 'datetime',
     ];
 
     public function getEstadoTextoAttribute(): string

@@ -50,6 +50,30 @@ class ContabiliumService
         return $response->json() ?? [];
     }
 
+    // PDF de un comprobante (contenido binario)
+    public function pdfComprobante(int $id): string
+    {
+        $response = Http::withToken($this->token())
+            ->timeout(30)
+            ->get($this->url('api/comprobantes/obtenerPdf'), ['id' => $id]);
+
+        if ($response->status() === 401) {
+            Cache::forget('contabilium_token');
+
+            $response = Http::withToken($this->token())
+                ->timeout(30)
+                ->get($this->url('api/comprobantes/obtenerPdf'), ['id' => $id]);
+        }
+
+        $response->throw();
+
+        if (!str_starts_with((string) $response->header('Content-Type'), 'application/pdf')) {
+            throw new \RuntimeException('Contabilium no devolvió un PDF');
+        }
+
+        return $response->body();
+    }
+
     // Token de acceso (dura 24 h, se guarda en caché un poco menos)
     private function token(): string
     {

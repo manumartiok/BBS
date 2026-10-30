@@ -5,18 +5,28 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ManejaCarrito;
 use App\Mail\PedidoConfirmacionMail;
 use App\Models\CarritoPendiente;
+use App\Models\Contacto;
 use App\Models\Cotizacion;
 use App\Models\Pedido;
 use App\Models\Producto;
+use App\Services\MercadoPagoService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class PedidoController extends Controller
 {
     use ManejaCarrito;
+
+    private const ENTREGAS = ['mercado_flex' => 'Mercado Flex', 'transporte_terminal' => 'Transporte a la terminal', 'retiro_local' => 'Retiro en local'];
+    private const FORMAS_PAGO = ['mercado_pago' => 'Mercado Pago', 'transferencia' => 'Transferencia bancaria', 'efectivo' => 'Efectivo (únicamente en local)'];
+
+    // adjuntos de los pedidos con Mercado Pago, que se mandan recién cuando se aprueba el pago
+    private const CARPETA_ADJUNTOS = 'pedidos-adjuntos';
 
     public function index()
     {
@@ -177,22 +187,26 @@ class PedidoController extends Controller
                 'telefono' => $usuario->telefono ?? '-',
             ],
             'entrega' => $request->entrega,
-            'entrega_label' => ['mercado_flex' => 'Mercado Flex', 'transporte_terminal' => 'Transporte a la terminal', 'retiro_local' => 'Retiro en local'][$request->entrega],
+            'entrega_label' => self::ENTREGAS[$request->entrega],
             'forma_pago' => $request->forma_pago,
-            'forma_pago_label' => ['mercado_pago' => 'Mercado Pago', 'transferencia' => 'Transferencia bancaria', 'efectivo' => 'Efectivo (únicamente en local)'][$request->forma_pago],
+            'forma_pago_label' => self::FORMAS_PAGO[$request->forma_pago],
             'mensaje' => $request->mensaje ?? '',
             'items' => $items,
             'totales' => $totales,
         ];
 
+        // Con Mercado Pago los puntos se suman y los mails salen recién cuando se aprueba el pago
+        $mercadoPago = $request->forma_pago === 'mercado_pago';
+
         try {
-            DB::transaction(function () use ($usuario, $request, $totales, $items, $carrito, $puntos) {
+            $pedidoModel = DB::transaction(function () use ($usuario, $request, $totales, $items, $carrito, $puntos, $mercadoPago) {
                 $pedidoModel = Pedido::create([
                     'usuario_id' => $usuario->id,
                     'cliente_id' => $usuario->id,
                     'estado' => 'pendiente',
                     'entrega' => $request->entrega,
                     'forma_pago' => $request->forma_pago,
+                    'pago_estado' => $mercadoPago ? 'pendiente' : null,
                     'mensaje' => $request->mensaje ?? '',
                     'subtotal' => $totales['subtotal'],
                     'iva' => $totales['iva'],
@@ -215,9 +229,11 @@ class PedidoController extends Controller
                 }
 
                 // el cliente suma los puntos por compra de lo que lleva
-                if ($puntos > 0) {
+                if ($puntos > 0 && !$mercadoPago) {
                     $usuario->increment('puntos', $puntos);
                 }
+
+                return $pedidoModel;
             });
         } catch (Throwable $e) {
             report($e);
@@ -227,7 +243,18 @@ class PedidoController extends Controller
         session()->forget('carrito');
         $this->guardarCarritoPendiente($usuario, []);
 
-        $ownerEmail = config('mail.orders_recipient') ?: config('mail.from.address');
+        if ($mercadoPago) {
+            // el adjunto se guarda para mandarlo con los mails cuando se apruebe el pago
+            if ($archivo = $request->file('archivo')) {
+                $archivo->storeAs(self::CARPETA_ADJUNTOS . '/' . $pedidoModel->id, $archivo->getClientOriginalName(), 'local');
+            }
+
+            return response()->json([
+                'success' => true,
+                'redirect' => route('web-pedidos.mp.pagar', $pedidoModel),
+            ]);
+        }
+
         $erroresCorreo = [];
         try {
             Mail::to($usuario->email)->send(new PedidoConfirmacionMail($pedido, 'cliente', $request->file('archivo')));
@@ -236,7 +263,7 @@ class PedidoController extends Controller
             $erroresCorreo[] = 'cliente';
         }
         try {
-            Mail::to($ownerEmail)->send(new PedidoConfirmacionMail($pedido, 'duenos', $request->file('archivo')));
+            Mail::to('tucorreo@dominio.com')->send(new PedidoConfirmacionMail($pedido, 'duenos', $request->file('archivo')));
         } catch (Throwable $e) {
             report($e);
             $erroresCorreo[] = 'administracion';
@@ -252,6 +279,119 @@ class PedidoController extends Controller
         ]);
     }
 
+    // Pantalla con el botón de Mercado Pago. Se puede volver a ella para reintentar un pago rechazado
+    public function pagarMercadoPago(Request $request, Pedido $pedido, MercadoPagoService $mercadoPago)
+    {
+        $usuario = auth('web_usuario')->user();
+        abort_unless((int) $pedido->cliente_id === (int) $usuario->id && $pedido->forma_pago === 'mercado_pago', 404);
+
+        // si ya hubo un intento, se consulta a Mercado Pago (respaldo del retorno y del webhook)
+        $this->sincronizarPago($pedido, $mercadoPago);
+
+        if ($pedido->pago_estado === 'aprobado') {
+            return redirect()->route('web-pedidos')->with('pedido_ok', $this->mensajePagoAprobado($pedido));
+        }
+
+        // una preferencia nueva en cada visita: siempre con el total guardado en el pedido
+        $preferencia = null;
+        try {
+            $preferencia = $mercadoPago->crearPreferencia($pedido, $usuario->email, route('web-pedidos.mp.retorno', $pedido));
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        return view('content.web.webpedido-mp', [
+            'pedido' => $pedido->load('items.producto'),
+            'publicKey' => $mercadoPago->publicKey(),
+            'preferencia' => $preferencia,
+            'resultado' => $request->query('resultado') ?? $pedido->resultado_pago,
+            'retornoAutomatico' => $mercadoPago->retornoAutomatico(),
+        ]);
+    }
+
+    // Vuelta desde Mercado Pago (back_urls). No se confía en los parámetros: el pago se consulta a la API
+    public function retornoMercadoPago(Request $request, Pedido $pedido, MercadoPagoService $mercadoPago)
+    {
+        abort_unless((int) $pedido->cliente_id === (int) auth('web_usuario')->id(), 404);
+
+        $paymentId = $request->query('payment_id') ?? $request->query('collection_id');
+        if (ctype_digit((string) $paymentId)) {
+            $this->sincronizarPago($pedido, $mercadoPago, (int) $paymentId);
+        }
+
+        if ($pedido->pago_estado === 'aprobado') {
+            return redirect()->route('web-pedidos')->with('pedido_ok', $this->mensajePagoAprobado($pedido));
+        }
+
+        return redirect()->route('web-pedidos.mp.pagar', array_filter([$pedido, 'resultado' => $pedido->resultado_pago]));
+    }
+
+    // Lo que se hace una sola vez cuando el pago queda aprobado (también desde el webhook):
+    // suma los puntos del pedido y manda los mails, con el adjunto si el cliente subió uno
+    public function alAprobarsePago(Pedido $pedido): void
+    {
+        $pedido->load(['items', 'cliente', 'usuario']);
+        $cliente = $pedido->cliente ?: $pedido->usuario;
+
+        if ($cliente && $pedido->puntos_ganados > 0) {
+            $cliente->increment('puntos', $pedido->puntos_ganados);
+        }
+
+        $adjunto = null;
+        $guardado = Storage::disk('local')->files(self::CARPETA_ADJUNTOS . '/' . $pedido->id)[0] ?? null;
+        if ($guardado) {
+            $ruta = Storage::disk('local')->path($guardado);
+            $adjunto = new UploadedFile($ruta, basename($ruta), null, null, true);
+        }
+
+        $datos = [
+            'cliente' => [
+                'usuario' => $cliente?->usuario ?? '-',
+                'email' => $cliente?->email,
+                'empresa' => $cliente?->empresa ?? '-',
+                'cuit' => $cliente?->cuit ?? '-',
+                'telefono' => $cliente?->telefono ?? '-',
+            ],
+            'entrega' => $pedido->entrega,
+            'entrega_label' => self::ENTREGAS[$pedido->entrega] ?? $pedido->entrega,
+            'forma_pago' => $pedido->forma_pago,
+            'forma_pago_label' => (self::FORMAS_PAGO[$pedido->forma_pago] ?? $pedido->forma_pago) . ' (pagado)',
+            'mensaje' => $pedido->mensaje ?? '',
+            'items' => $pedido->items->map(fn ($item) => $item->only(['producto_id', 'codigo', 'nombre', 'precio_base', 'precio_con_descuento', 'cantidad', 'subtotal']))->all(),
+            'totales' => $pedido->totales,
+        ];
+
+        $destinos = array_filter(['cliente' => $cliente?->email, 'duenos' => 'tucorreo@dominio.com']);
+        foreach ($destinos as $tipo => $destino) {
+            try {
+                Mail::to($destino)->send(new PedidoConfirmacionMail($datos, $tipo, $adjunto));
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+    }
+
+    private function sincronizarPago(Pedido $pedido, MercadoPagoService $mercadoPago, ?int $paymentId = null): void
+    {
+        if ($pedido->pago_estado === 'aprobado') {
+            return;
+        }
+
+        try {
+            if ($mercadoPago->sincronizar($pedido, $paymentId)) {
+                $this->alAprobarsePago($pedido);
+            }
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    private function mensajePagoAprobado(Pedido $pedido): string
+    {
+        return 'Pago aprobado. Tu pedido #' . $pedido->id . ' se realizó con éxito.'
+            . ($pedido->puntos_ganados > 0 ? ' Sumaste ' . number_format($pedido->puntos_ganados, 0, ',', '.') . ' puntos.' : '');
+    }
+
     public function historico()
     {
         $usuario = auth('web_usuario')->user();
@@ -263,7 +403,7 @@ class PedidoController extends Controller
     {
         $usuario = auth('web_usuario')->user();
         abort_unless($usuario && (int) $pedido->cliente_id === (int) $usuario->id, 403);
-        $pedido->load(['usuario', 'cliente', 'items']);
+        $pedido->load(['usuario', 'cliente', 'items.producto']);
         return Pdf::loadView('content.pedidos.pdf', compact('pedido'))
             ->stream('pedido-' . str_pad($pedido->id, 8, '0', STR_PAD_LEFT) . '.pdf');
     }
@@ -310,7 +450,21 @@ class PedidoController extends Controller
             })
             ->latest()->paginate(15)->withQueryString();
 
-        return view('content.admin.historico', compact('pedidos'));
+        $retiroLocal = Contacto::textoRetiroLocal();
+
+        return view('content.admin.historico', compact('pedidos', 'retiroLocal'));
+    }
+
+    // Texto que ven los clientes debajo de "Retiro en local"; vacío vuelve al texto por defecto
+    public function adminRetiroLocal(Request $request)
+    {
+        $validated = $request->validate(['retiro_local_texto' => 'nullable|string|max:1000']);
+
+        $contacto = Contacto::first() ?? new Contacto();
+        $contacto->retiro_local_texto = trim((string) ($validated['retiro_local_texto'] ?? '')) ?: null;
+        $contacto->save();
+
+        return redirect()->route('adm.pedidos-historico')->with('success', 'Texto de retiro en local actualizado correctamente.');
     }
 
     public function adminShow(Pedido $pedido)

@@ -34,6 +34,13 @@ return [
         'api_key' => env('CONTABILIUM_API_KEY'),
     ],
 
+    'mercadopago' => [
+        'public_key' => env('MP_PUBLIC_KEY'),
+        'access_token' => env('MP_ACCESS_TOKEN'),
+        // clave secreta del webhook (panel de la aplicación > Webhooks); vacía no valida la firma
+        'webhook_secret' => env('MP_WEBHOOK_SECRET'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

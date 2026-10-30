@@ -11,9 +11,9 @@
 
 {{-- Foto --}}
 <div class="mb-4 campo-archivo">
-    <label class="block text-gray-700 font-medium mb-2">Foto (recomendado 510x400) / (2MB máximo)</label>
+    <label class="block text-gray-700 font-medium mb-2">Foto (recomendado 500x500) / (2MB máximo)</label>
     <img src="{{ $producto->foto }}" alt=""
-         class="vista-previa mb-3 w-full max-w-[510px] h-[400px] object-cover rounded {{ empty($producto->foto) ? 'hidden' : '' }}">
+         class="vista-previa mb-3 w-full max-w-[500px] h-[500px] object-cover rounded {{ empty($producto->foto) ? 'hidden' : '' }}">
     <input type="file" name="foto" accept="image/*" onchange="previsualizarImagen(this)"
            class="w-full border border-gray-300 rounded px-4 py-2">
     @if (!empty($producto->foto))
@@ -68,6 +68,13 @@
 <div class="mb-4">
     <label class="block text-gray-700 font-medium mb-2">Precio</label>
     <input type="number" step="0.01" name="precio" value="{{ old('precio', $producto->precio) }}"
+           class="w-full border border-gray-300 rounded px-4 py-2">
+</div>
+
+{{-- IVA --}}
+<div class="mb-4">
+    <label class="block text-gray-700 font-medium mb-2">IVA (%)</label>
+    <input type="number" step="0.01" min="0" max="100" name="iva" value="{{ old('iva', $producto->iva) }}"
            class="w-full border border-gray-300 rounded px-4 py-2">
 </div>
 

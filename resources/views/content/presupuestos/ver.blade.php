@@ -77,7 +77,8 @@
                     @endphp
                     <tr class="fila-item h-[115px] border-b border-[#D9D9D9]"
                         data-precio-base="{{ $item->precio_base }}"
-                        data-precio-con-desc="{{ $item->precio_con_descuento }}">
+                        data-precio-con-desc="{{ $item->precio_con_descuento }}"
+                        data-alicuota-iva="{{ $producto?->alicuota_iva ?? 21 }}">
                         <td>
                             <div class="flex items-center justify-center w-[80px] h-[83px] p-[2px] border border-[#D9D9D9] rounded-[12px] overflow-hidden">
                                 <img src="{{ $producto?->foto_url ?? asset('assets/img/default.png') }}" alt="{{ $item->nombre }}" class="w-full h-full object-contain">
@@ -147,9 +148,15 @@
                     <span id="panel-subtotal">{{ $pesos($presupuesto->subtotal) }}</span>
                 </div>
                 <hr class="border-[#D9D9D9] my-[7px]">
+                @if(isset($totales['iva_21']))
+                    <div class="flex justify-between">
+                        <span>IVA 10,5%</span>
+                        <span id="panel-iva-105">{{ $pesos($totales['iva_105'] ?? 0) }}</span>
+                    </div>
+                @endif
                 <div class="flex justify-between">
                     <span>IVA 21%</span>
-                    <span id="panel-iva">{{ $pesos($presupuesto->iva) }}</span>
+                    <span id="panel-iva-21">{{ $pesos($totales['iva_21'] ?? $presupuesto->iva) }}</span>
                 </div>
                 <div class="flex justify-between items-baseline mt-[1px]">
                     <span class="text-[24px] leading-[29px] font-semibold">Total <span class="text-[15px]">(IVA incluido)</span></span>
@@ -174,6 +181,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function recalcular() {
         let subtotalSinDesc = 0;
         let subtotalConDesc = 0;
+        let iva105 = 0;
+        let iva21 = 0;
 
         document.querySelectorAll('.fila-item').forEach(fila => {
             const cantidad = parseInt(fila.querySelector('.cant-item').textContent, 10);
@@ -183,14 +192,19 @@ document.addEventListener('DOMContentLoaded', function () {
             fila.querySelector('.subtotal-item').textContent = formatPesos(precioConDesc * cantidad);
             subtotalSinDesc += precioBase * cantidad;
             subtotalConDesc += precioConDesc * cantidad;
+            if (parseFloat(fila.dataset.alicuotaIva) === 10.5) {
+                iva105 += precioConDesc * cantidad * 0.105;
+            } else {
+                iva21 += precioConDesc * cantidad * 0.21;
+            }
         });
 
-        const iva = subtotalConDesc * 0.21;
         set('panel-subtotal-sin-desc', subtotalSinDesc);
         set('panel-descuento', subtotalSinDesc - subtotalConDesc);
         set('panel-subtotal', subtotalConDesc);
-        set('panel-iva', iva);
-        set('panel-total', subtotalConDesc + iva);
+        set('panel-iva-105', iva105);
+        set('panel-iva-21', iva21);
+        set('panel-total', subtotalConDesc + iva105 + iva21);
     }
 
     function cambiarCantidad(boton, delta) {

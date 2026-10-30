@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'usuario.publico.auth' => \App\Http\Middleware\UsuarioPublicoAuth::class,
         ]);
 
+        // Mercado Pago no manda token CSRF en sus notificaciones
+        $middleware->validateCsrfTokens(except: ['webhooks/mercadopago']);
+
         // Idioma del sitio (config/sitio.php)
         $middleware->web(append: [
             \App\Http\Middleware\SetIdioma::class,

@@ -26,6 +26,7 @@ use App\Http\Controllers\UsuarioPublicoAdminController;
 use App\Http\Controllers\PedidoPublicoAdminController;
 use App\Http\Controllers\AccesoPublicoController;
 use App\Http\Controllers\CarritoPublicoController;
+use App\Http\Controllers\MercadoPagoController;
 use App\Http\Controllers\InfoController;
 use App\Http\Controllers\InfoPagoController;
 use App\Models\Marca;
@@ -40,6 +41,7 @@ use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\MetadatoController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\ContabiliumApiController;
+use App\Http\Controllers\CuentaCorrienteController;
 
 //ADMIN
 Route::middleware(AdminAuth::class)->group(function () {
@@ -162,11 +164,16 @@ Route::middleware(AdminAuth::class)->group(function () {
     Route::get('/admin/usuarios/switch/{usuario_id}', [UsuarioController::class,'switch'])->name('adm.usuarios-switch');
 
     //historico
+    //cuentas corrientes (comprobantes de Contabilium, solo lectura)
+    Route::get('/admin/cuentas-corrientes', [CuentaCorrienteController::class, 'adminIndex'])->name('adm.cuentas-corrientes');
+    Route::get('/admin/cuentas-corrientes/{comprobante}/pdf', [CuentaCorrienteController::class, 'adminPdf'])->name('adm.cuentas-corrientes-pdf');
+
     Route::get('/admin/pedidos', [PedidoController::class, 'adminIndex'])->name('adm.pedidos-historico');
     Route::get('/admin/pedidos/editor/{pedido}', [PedidoController::class, 'adminShow'])->name('adm.pedidos-historico-editor');
     Route::post('/admin/pedidos/update', [PedidoController::class, 'adminUpdate'])->name('adm.pedidos-historico-update');
     Route::get('/admin/pedidos/destroy/{pedido}', [PedidoController::class, 'adminDestroy'])->name('adm.pedidos-historico-destroy');
     Route::get('/admin/pedidos/switch/{pedido}', [PedidoController::class, 'adminSwitch'])->name('adm.pedidos-historico-switch');
+    Route::post('/admin/pedidos/retiro-local', [PedidoController::class, 'adminRetiroLocal'])->name('adm.pedidos-retiro-local');
 
     //historico de presupuestos
     Route::get('/admin/presupuestos', [PresupuestoController::class, 'adminIndex'])->name('adm.presupuestos-historico');
@@ -255,9 +262,14 @@ Route::middleware('web.usuario.auth')->group(function () {
     Route::post('/info-pago/enviar', [InfoPagoController::class, 'enviar'])
         ->name('info-pago.enviar');
 
+    Route::get('/clientes/cuenta-corriente', [CuentaCorrienteController::class, 'index'])->name('web-cuenta-corriente');
+    Route::get('/clientes/cuenta-corriente/{comprobante}/pdf', [CuentaCorrienteController::class, 'pdf'])->name('web-cuenta-corriente.pdf');
+
     Route::get('/clientes/pedidos', [PedidoController::class, 'historico'])->name('web-pedidos');
     Route::get('/clientes/pedidos/{pedido}/pdf', [PedidoController::class, 'pdf'])->name('web-pedidos.pdf');
     Route::post('/clientes/pedidos/{pedido}/recomprar', [PedidoController::class, 'recomprar'])->name('web-pedidos.recomprar');
+    Route::get('/clientes/pedidos/{pedido}/mercado-pago', [PedidoController::class, 'pagarMercadoPago'])->name('web-pedidos.mp.pagar');
+    Route::get('/clientes/pedidos/{pedido}/mercado-pago/retorno', [PedidoController::class, 'retornoMercadoPago'])->name('web-pedidos.mp.retorno');
 
     Route::get('/clientes/canje-puntos', [CanjePuntosController::class, 'index'])->name('web-canje');
     Route::get('/clientes/canje-puntos/carrito', [CanjePuntosController::class, 'carrito'])->name('web-canje.carrito');
@@ -302,7 +314,12 @@ Route::middleware('usuario.publico.auth')->group(function () {
     Route::post('/compra/pago', [CarritoPublicoController::class, 'guardarPago'])->name('compra.pago.guardar');
     Route::get('/compra/finalizar', [CarritoPublicoController::class, 'pasoFinal'])->name('compra.finalizar');
     Route::post('/compra/finalizar', [CarritoPublicoController::class, 'realizarPedido'])->name('compra.realizar');
+    Route::get('/compra/mercado-pago/{pedido}', [CarritoPublicoController::class, 'pagarMercadoPago'])->name('compra.mp.pagar');
+    Route::get('/compra/mercado-pago/{pedido}/retorno', [CarritoPublicoController::class, 'retornoMercadoPago'])->name('compra.mp.retorno');
 });
+
+// notificaciones de pagos de Mercado Pago (sin sesión ni CSRF, ver bootstrap/app.php)
+Route::post('/webhooks/mercadopago', [MercadoPagoController::class, 'webhook'])->name('mercadopago.webhook');
 
 // carrito de los usuarios públicos
 Route::middleware('usuario.publico.auth')->prefix('carrito-publico')->group(function () {

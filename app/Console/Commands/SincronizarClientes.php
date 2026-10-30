@@ -77,7 +77,9 @@ class SincronizarClientes extends Command
             return;
         }
 
-        $usuario = WebUsuario::where('cuit', $cuit)->first();
+        // Primero por el Id de Contabilium; los usuarios cargados antes de tener esa columna, por cuit
+        $usuario = WebUsuario::where('contabilium_id', $item['Id'])->first()
+            ?? WebUsuario::where('cuit', $cuit)->first();
 
         // Usuario nuevo: activo, contraseña = NroDoc hasheado, descuentos y empresa en blanco.
         // Si ya existe no se tocan contraseña, descuentos, empresa ni estado.
@@ -97,6 +99,7 @@ class SincronizarClientes extends Command
             $this->actualizados++;
         }
 
+        $usuario->contabilium_id = $item['Id'];
         $usuario->usuario = trim((string) ($item['NombreFantasia'] ?? ''));
         $usuario->email = trim((string) ($item['Email'] ?? ''));
         $usuario->razon_social = trim((string) ($item['RazonSocial'] ?? ''));

@@ -81,6 +81,9 @@ trait ManejaCarrito
         $subtotalSinDescuento = 0;
         $subtotalConDescuento = 0;
         $puntos = 0;
+        // IVA de cada producto según su alícuota (10,5% o 21%)
+        $iva105 = 0;
+        $iva21 = 0;
 
         foreach ($carrito as $productoId => $item) {
             $producto = Producto::where('active', true)->find($productoId);
@@ -100,6 +103,12 @@ trait ManejaCarrito
             $subtotalConDescuento += $subtotalItem;
             $puntos += (int) $producto->puntos_compra * $cantidad;
 
+            if ($producto->alicuota_iva === 10.5) {
+                $iva105 += $subtotalItem * 0.105;
+            } else {
+                $iva21 += $subtotalItem * 0.21;
+            }
+
             $items[] = [
                 'producto_id' => $producto->id,
                 'codigo' => $producto->codigo ?? '-',
@@ -112,7 +121,7 @@ trait ManejaCarrito
         }
 
         // La forma de pago ya no lleva descuento
-        $iva = $subtotalConDescuento * 0.21;
+        $iva = $iva105 + $iva21;
 
         return [
             'items' => $items,
@@ -124,6 +133,8 @@ trait ManejaCarrito
                 'descuento_forma_pago_porcentaje' => 0,
                 'descuento_forma_pago' => 0,
                 'subtotal' => $subtotalConDescuento,
+                'iva_105' => $iva105,
+                'iva_21' => $iva21,
                 'iva' => $iva,
                 'total' => $subtotalConDescuento + $iva,
             ],

@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PedidoConfirmacionMail;
 use App\Models\CarritoPublicoItem;
 use App\Models\Contacto;
 use App\Models\PedidoPublico;
 use App\Models\Producto;
+use App\Services\MercadoPagoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 // Carrito de los usuarios públicos (el de la zona privada es el de PedidoController)
@@ -37,14 +40,22 @@ class CarritoPublicoController extends Controller
                 'precio' => (float) $item->producto->precio_pesos,
                 'cantidad' => $item->cantidad,
                 'subtotal' => (float) $item->producto->precio_pesos * $item->cantidad,
+                'alicuota_iva' => $item->producto->alicuota_iva,
             ])
             ->values();
+
+        // IVA según la alícuota de cada producto (10,5% o 21%)
+        $iva105 = $items->where('alicuota_iva', 10.5)->sum('subtotal') * 0.105;
+        $iva21 = $items->where('alicuota_iva', '!=', 10.5)->sum('subtotal') * 0.21;
 
         return [
             'success' => true,
             'items' => $items,
             'cantidad' => $items->count(),
             'subtotal' => $items->sum('subtotal'),
+            'iva_105' => $iva105,
+            'iva_21' => $iva21,
+            'total' => $items->sum('subtotal') + $iva105 + $iva21,
         ];
     }
 
@@ -141,6 +152,9 @@ class CarritoPublicoController extends Controller
         return view('content.web.compra-final', [
             'items' => $carrito['items'],
             'subtotal' => $carrito['subtotal'],
+            'iva105' => $carrito['iva_105'],
+            'iva21' => $carrito['iva_21'],
+            'total' => $carrito['total'],
             'usuario' => auth('usuario_publico')->user(),
             'envioTexto' => self::ENVIOS[$envio['envio']] ?? $envio['envio'],
             'pagoTexto' => self::PAGOS[$pago] ?? $pago,
@@ -182,12 +196,13 @@ class CarritoPublicoController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($request, $carrito, $envio, $pago) {
+            $pedido = DB::transaction(function () use ($request, $carrito, $envio, $pago) {
                 $pedido = PedidoPublico::create([
                     'usuario_publico_id' => $this->usuarioId(),
                     'envio' => $envio['envio'],
                     'envio_codigo_postal' => $envio['codigo_postal'] ?? null,
                     'forma_pago' => $pago,
+                    'pago_estado' => $pago === 'mercado_pago' ? 'pendiente' : null,
                     'nombre' => $request->nombre,
                     'cuit' => $request->cuit,
                     'email' => $request->email,
@@ -203,7 +218,10 @@ class CarritoPublicoController extends Controller
                         'provincia' => $request->entrega_provincia,
                         'codigo_postal' => $request->entrega_codigo_postal,
                     ] : null,
-                    'total' => $carrito['subtotal'],
+                    'subtotal' => $carrito['subtotal'],
+                    'iva_105' => $carrito['iva_105'],
+                    'iva_21' => $carrito['iva_21'],
+                    'total' => $carrito['total'],
                 ]);
 
                 foreach ($carrito['items'] as $item) {
@@ -218,6 +236,8 @@ class CarritoPublicoController extends Controller
                 }
 
                 CarritoPublicoItem::where('usuario_publico_id', $this->usuarioId())->delete();
+
+                return $pedido;
             });
         } catch (Throwable $e) {
             report($e);
@@ -226,7 +246,137 @@ class CarritoPublicoController extends Controller
 
         session()->forget(['compra_envio', 'compra_pago']);
 
+        // Con Mercado Pago los mails salen recién cuando se aprueba el pago
+        if ($pago === 'mercado_pago') {
+            return redirect()->route('compra.mp.pagar', $pedido);
+        }
+
+        $this->enviarMails($pedido);
+
         return redirect()->route('home')->with('compra_ok', 'Tu pedido se realizó con éxito.');
+    }
+
+    // Pantalla con el botón de Mercado Pago. Se puede volver a ella para reintentar un pago rechazado
+    public function pagarMercadoPago(Request $request, PedidoPublico $pedido, MercadoPagoService $mercadoPago)
+    {
+        abort_unless((int) $pedido->usuario_publico_id === $this->usuarioId() && $pedido->forma_pago === 'mercado_pago', 404);
+
+        // si ya hubo un intento, se consulta a Mercado Pago (respaldo del retorno y del webhook)
+        $this->sincronizarPago($pedido, $mercadoPago);
+
+        if ($pedido->pago_estado === 'aprobado') {
+            return redirect()->route('home')->with('compra_ok', 'Pago aprobado. Tu pedido se realizó con éxito.');
+        }
+
+        // una preferencia nueva en cada visita: siempre con el total guardado en el pedido
+        $preferencia = null;
+        try {
+            $preferencia = $mercadoPago->crearPreferencia($pedido, $pedido->email, route('compra.mp.retorno', $pedido));
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        return view('content.web.compra-mp', [
+            'pedido' => $pedido,
+            'publicKey' => $mercadoPago->publicKey(),
+            'preferencia' => $preferencia,
+            'resultado' => $request->query('resultado') ?? $pedido->resultado_pago,
+            'retornoAutomatico' => $mercadoPago->retornoAutomatico(),
+        ]);
+    }
+
+    // Vuelta desde Mercado Pago (back_urls). No se confía en los parámetros: el pago se consulta a la API
+    public function retornoMercadoPago(Request $request, PedidoPublico $pedido, MercadoPagoService $mercadoPago)
+    {
+        abort_unless((int) $pedido->usuario_publico_id === $this->usuarioId(), 404);
+
+        $paymentId = $request->query('payment_id') ?? $request->query('collection_id');
+        if (ctype_digit((string) $paymentId)) {
+            $this->sincronizarPago($pedido, $mercadoPago, (int) $paymentId);
+        }
+
+        if ($pedido->pago_estado === 'aprobado') {
+            return redirect()->route('home')->with('compra_ok', 'Pago aprobado. Tu pedido se realizó con éxito.');
+        }
+
+        return redirect()->route('compra.mp.pagar', array_filter([$pedido, 'resultado' => $pedido->resultado_pago]));
+    }
+
+    // Lo que se hace una sola vez cuando el pago queda aprobado (también desde el webhook)
+    public function alAprobarsePago(PedidoPublico $pedido): void
+    {
+        $this->enviarMails($pedido->fresh('items'));
+    }
+
+    private function sincronizarPago(PedidoPublico $pedido, MercadoPagoService $mercadoPago, ?int $paymentId = null): void
+    {
+        if ($pedido->pago_estado === 'aprobado') {
+            return;
+        }
+
+        try {
+            if ($mercadoPago->sincronizar($pedido, $paymentId)) {
+                $this->alAprobarsePago($pedido);
+            }
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    // Mail de confirmación al cliente y aviso a la dirección de administración ('duenos');
+    // si un envío falla el pedido ya está registrado, así que solo se reporta
+    private function enviarMails(PedidoPublico $pedido): void
+    {
+        $direccion = collect([$pedido->direccion, $pedido->localidad, $pedido->provincia, 'CP ' . $pedido->codigo_postal])->implode(', ');
+        if ($pedido->entrega_otra) {
+            $otra = $pedido->entrega_otra;
+            $direccion .= ' | Entrega en: ' . collect([$otra['direccion'] ?? '', $otra['localidad'] ?? '', $otra['provincia'] ?? '', 'CP ' . ($otra['codigo_postal'] ?? '')])->implode(', ');
+        }
+
+        $datos = [
+            'cliente' => [
+                'usuario' => $pedido->nombre,
+                'email' => $pedido->email,
+                'empresa' => '-',
+                'cuit' => $pedido->cuit,
+                'telefono' => $pedido->celular,
+            ],
+            'entrega' => $pedido->envio,
+            'entrega_label' => self::ENVIOS[$pedido->envio] ?? $pedido->envio,
+            'direccion' => $direccion,
+            'forma_pago' => $pedido->forma_pago,
+            'forma_pago_label' => (self::PAGOS[$pedido->forma_pago] ?? $pedido->forma_pago) . ($pedido->pago_estado === 'aprobado' ? ' (pagado)' : ''),
+            'mensaje' => $pedido->mensaje ?? '',
+            'items' => $pedido->items->map(fn ($item) => [
+                'codigo' => $item->codigo,
+                'nombre' => $item->nombre,
+                'cantidad' => $item->cantidad,
+                'precio_base' => $item->precio,
+                'precio_con_descuento' => $item->precio,
+                'subtotal' => $item->subtotal,
+            ])->all(),
+            'totales' => [
+                'subtotal_sin_descuento' => $pedido->subtotal,
+                'descuento_items' => 0,
+                'subtotal' => $pedido->subtotal,
+                'iva_105' => $pedido->iva_105,
+                'iva_21' => $pedido->iva_21,
+                'iva' => $pedido->iva_105 + $pedido->iva_21,
+                'total' => $pedido->total,
+            ],
+        ];
+
+        $destinos = [
+            'cliente' => $pedido->email,
+            'duenos' => 'tucorreo@dominio.com',
+        ];
+        foreach ($destinos as $tipo => $destino) {
+            try {
+                Mail::to($destino)->send(new PedidoConfirmacionMail($datos, $tipo));
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
     }
 
     // El efectivo solo vale para retiro en local

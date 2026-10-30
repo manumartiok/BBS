@@ -50,12 +50,7 @@
                         </label>
                     @endforeach
 
-                    <div class="mt-[8px] ml-[43px] text-[13px] leading-[22px] text-[#222]">
-                        <p>Lu - Vi 8:30 - 17:30 / Sa 9:00 - 13:00</p>
-                        @if($contacto?->direccion)<p>{{ $contacto->direccion }}</p>@endif
-                        @if($contacto?->whatssap)<p>{{ $contacto->whatssap }}</p>@endif
-                        @if($contacto?->mail)<p>{{ $contacto->mail }}</p>@endif
-                    </div>
+                    <div class="mt-[8px] ml-[43px] text-[13px] leading-[22px] text-[#222] whitespace-pre-line">{{ \App\Models\Contacto::textoRetiroLocal() }}</div>
                 </section>
 
                 <a href="{{ route('compra.envio') }}"

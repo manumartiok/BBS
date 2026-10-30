@@ -1,4 +1,4 @@
-{{-- Resumen "Pedido" de la compra del usuario público. Variables: $items, $subtotal --}}
+{{-- Resumen "Pedido" de la compra del usuario público. Variables: $items, $subtotal; con $total, $iva105 e $iva21 (paso 4) muestra el IVA y el total --}}
 @php $pesos = fn ($n) => '$' . number_format($n, 0, ',', '.'); @endphp
 <section class="border border-[#D9D9D9] rounded-[12px] px-[13px]">
     <h2 class="h-[69px] pt-[27px] border-b border-[#D9D9D9] text-[24px] leading-[29px] font-semibold pl-[10px]">Pedido</h2>
@@ -20,8 +20,30 @@
         @endforeach
     </div>
 
-    <div class="flex items-baseline justify-between gap-[8px] pt-[24px] pb-[19px] pl-[10px] text-[24px] leading-[29px] font-medium">
-        <span>Subtotal</span>
-        <span>{{ $pesos($subtotal) }}</span>
-    </div>
+    @if(isset($total))
+        {{-- paso 4: subtotal + IVA de cada alícuota = total --}}
+        <div class="flex flex-col gap-[12px] pt-[24px] pb-[19px] pl-[10px] leading-[22px]">
+            <div class="flex items-baseline justify-between gap-[8px] text-[20px] font-medium">
+                <span>Subtotal</span>
+                <span>{{ $pesos($subtotal) }}</span>
+            </div>
+            <div class="flex items-baseline justify-between gap-[8px] text-[18px]">
+                <span>IVA 10,5%</span>
+                <span>{{ $pesos($iva105) }}</span>
+            </div>
+            <div class="flex items-baseline justify-between gap-[8px] text-[18px]">
+                <span>IVA 21%</span>
+                <span>{{ $pesos($iva21) }}</span>
+            </div>
+            <div class="flex items-baseline justify-between gap-[8px] pt-[12px] border-t border-[#D9D9D9] text-[24px] leading-[29px] font-semibold">
+                <span>Total <span class="text-[15px]">(IVA incluido)</span></span>
+                <span>{{ $pesos($total) }}</span>
+            </div>
+        </div>
+    @else
+        <div class="flex items-baseline justify-between gap-[8px] pt-[24px] pb-[19px] pl-[10px] text-[24px] leading-[29px] font-medium">
+            <span>Subtotal</span>
+            <span>{{ $pesos($subtotal) }}</span>
+        </div>
+    @endif
 </section>

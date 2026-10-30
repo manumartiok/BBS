@@ -60,12 +60,12 @@
             ? count(\App\Models\CarritoPendiente::where('usuario_id', $usuarioWeb->id)->whereNull('cliente_id')->value('items') ?? [])
             : 0;
 
-        // [texto, url, patrón de la ruta activa]. Cuenta corriente todavía no tiene sección.
+        // [texto, url, patrón de la ruta activa]
         $menu = [
             ['Productos',          route('web-productos'), 'clientes/productos'],
             ['Mis pedidos',        route('web-pedidos'),   'clientes/pedidos*'],
             ['Mis presupuestos',   route('web-presupuestos'), 'clientes/presupuestos*'],
-            ['Cuenta corriente',   '#',                    null],
+            ['Cuenta corriente',   route('web-cuenta-corriente'), 'clientes/cuenta-corriente*'],
             ['Info de pagos',      route('web-info'),      'clientes/informacion-pago'],
             ['Canje de puntos',    route('web-canje'),     'clientes/canje-puntos*'],
         ];

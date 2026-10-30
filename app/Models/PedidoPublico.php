@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\TienePagoMercadoPago;
 use Illuminate\Database\Eloquent\Model;
 
 // Pedido de un usuario público (distinto de Pedido, que es de los clientes de la zona privada)
 class PedidoPublico extends Model
 {
+    use TienePagoMercadoPago;
+
     protected $table = 'pedidos_publicos';
 
     protected $fillable = [
@@ -15,6 +18,11 @@ class PedidoPublico extends Model
         'envio',
         'envio_codigo_postal',
         'forma_pago',
+        'pago_estado',
+        'mp_preference_id',
+        'mp_payment_id',
+        'mp_status_detail',
+        'pagado_at',
         'nombre',
         'cuit',
         'email',
@@ -25,12 +33,19 @@ class PedidoPublico extends Model
         'codigo_postal',
         'mensaje',
         'entrega_otra',
+        'subtotal',
+        'iva_105',
+        'iva_21',
         'total',
     ];
 
     protected $casts = [
         'entrega_otra' => 'array',
+        'subtotal' => 'float',
+        'iva_105' => 'float',
+        'iva_21' => 'float',
         'total' => 'float',
+        'pagado_at' => 'datetime',
     ];
 
     public const ENVIOS = [
